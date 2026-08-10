@@ -1,0 +1,10 @@
+{
+  "CredentialId": "YOUR_CREDENTIAL_ID",
+  "Secret": "YOUR_SECRET",
+  "Version": "3.3",
+  "PartnerTag": "YOUR_PARTNER_TAG",
+  "Marketplace": "www.amazon.co.jp",
+  "AuthUrl": "https://api.amazon.co.jp/auth/o2/token",
+  "SearchUrl": "https://creatorsapi.amazon/catalog/v1/searchItems",
+  "ItemCount": 10
+}
