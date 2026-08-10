@@ -106,6 +106,13 @@ function Search-AmazonItem {
         keywords    = $keyword
         searchIndex = "Books"
         itemCount   = 10
+
+        resources = @(
+            "itemInfo.title"
+            "itemInfo.byLineInfo"
+            "itemInfo.contentInfo"
+            "images.primary.medium"
+        )
     }
 
 
@@ -167,10 +174,33 @@ function Search-AmazonItem {
 
         foreach ($item in $response.searchResult.items) {
 
+            # 著者
+            $authors = @()
+
+            foreach ($contributor in $item.itemInfo.byLineInfo.contributors) {
+
+                if ($contributor.roleType -eq "author") {
+                    $authors += $contributor.name
+                }
+            }
+
+            $authorText = $authors -join ", "
+
+            # 出版日
+            $publicationDate =
+                $item.itemInfo.contentInfo.publicationDate.displayValue
+
+            # 表紙画像URL
+            $imageUrl =
+                $item.images.primary.medium.url
+
             $result = [PSCustomObject]@{
-                Title = $item.itemInfo.title.displayValue
-                ASIN  = $item.asin
-                URL   = $item.detailPageURL
+                Title           = $item.itemInfo.title.displayValue
+                Author          = $authorText
+                PublicationDate = $publicationDate
+                ASIN            = $item.asin
+                ImageURL        = $imageUrl
+                URL             = $item.detailPageURL
             }
 
             $results += $result
