@@ -84,9 +84,8 @@ $resultGrid.AddHandler(
         }
 
         if ($button -and $button.Tag) {
-            $url = $button.Tag.ToString()
 
-            Start-Process $url
+            Start-Process $button.Tag.ToString()
 
             $e.Handled = $true
         }
@@ -108,28 +107,36 @@ function Search-AmazonItem {
     }
 
 
-    # Get selected category
     $selectedCategory =
         $categoryBox.SelectedItem.Content.ToString()
 
 
-    # Convert UI category to Amazon SearchIndex
+    # Category settings
     switch ($selectedCategory) {
 
         "Books" {
             $searchIndex = "Books"
+            $searchKeyword = $keyword
         }
 
         "Kindle" {
             $searchIndex = "KindleStore"
+            $searchKeyword = $keyword
         }
 
         "Movies" {
             $searchIndex = "MoviesAndTV"
+            $searchKeyword = $keyword
+        }
+
+        "Audible" {
+            $searchIndex = "All"
+            $searchKeyword = "$keyword Audible"
         }
 
         default {
             $searchIndex = "All"
+            $searchKeyword = $keyword
         }
     }
 
@@ -137,10 +144,9 @@ function Search-AmazonItem {
     $statusText.Text = "Searching..."
 
 
-    # Build request body
     $searchBody = @{
         partnerTag  = $config.PartnerTag
-        keywords    = $keyword
+        keywords    = $searchKeyword
         searchIndex = $searchIndex
         itemCount   = 10
 
@@ -156,13 +162,10 @@ function Search-AmazonItem {
     $searchJson =
         $searchBody | ConvertTo-Json -Depth 10
 
-
-    # UTF-8 request body
     $searchBytes =
         [System.Text.Encoding]::UTF8.GetBytes($searchJson)
 
 
-    # HTTP headers
     $headers = @{
         Authorization   = "Bearer $accessToken"
         "x-marketplace" = $config.Marketplace
@@ -180,12 +183,9 @@ function Search-AmazonItem {
 
     try {
 
-        # Call Creators API
         $webResponse =
             Invoke-WebRequest @searchParameters -UseBasicParsing
 
-
-        # Decode UTF-8 response
         $responseBytes =
             $webResponse.RawContentStream.ToArray()
 
@@ -198,16 +198,13 @@ function Search-AmazonItem {
             $responseText | ConvertFrom-Json
 
 
-        # DataGrid results
         $results = @()
 
 
         foreach ($item in $response.searchResult.items) {
 
-            # ==============================
-            # Creator
-            # ==============================
             $creators = @()
+
 
             if ($item.itemInfo.byLineInfo.contributors) {
 
@@ -216,26 +213,32 @@ function Search-AmazonItem {
                     $item.itemInfo.byLineInfo.contributors
                 ) {
 
-                    # Books / Kindle
                     if (
                         $selectedCategory -eq "Books" -or
-                        $selectedCategory -eq "Kindle"
+                        $selectedCategory -eq "Kindle" -or
+                        $selectedCategory -eq "Audible"
                     ) {
 
-                        if ($contributor.roleType -eq "author") {
+                        if (
+                            $contributor.roleType -eq "author"
+                        ) {
                             $creators += $contributor.name
                         }
                     }
 
-                    # Movies
+
                     elseif ($selectedCategory -eq "Movies") {
 
-                        if ($contributor.roleType -eq "director") {
+                        if (
+                            $contributor.roleType -eq "director"
+                        ) {
                             $creators +=
                                 "Director: $($contributor.name)"
                         }
 
-                        elseif ($contributor.roleType -eq "actor") {
+                        elseif (
+                            $contributor.roleType -eq "actor"
+                        ) {
                             $creators +=
                                 "Actor: $($contributor.name)"
                         }
@@ -248,42 +251,47 @@ function Search-AmazonItem {
                 $creators -join ", "
 
 
-            # ==============================
-            # Release date
-            # ==============================
             $releaseDate = ""
 
             if (
                 $item.itemInfo.contentInfo.publicationDate
             ) {
+
                 $releaseDate =
                     $item.itemInfo.contentInfo.publicationDate.displayValue
             }
 
 
-            # ==============================
-            # Image URL
-            # ==============================
             $imageUrl = ""
 
             if (
                 $item.images.primary.medium.url
             ) {
+
                 $imageUrl =
                     $item.images.primary.medium.url
             }
 
 
-            # ==============================
-            # DataGrid row
-            # ==============================
             $result = [PSCustomObject]@{
-                Title       = $item.itemInfo.title.displayValue
-                Creator     = $creatorText
-                ReleaseDate = $releaseDate
-                ASIN        = $item.asin
-                ImageURL    = $imageUrl
-                URL         = $item.detailPageURL
+
+                Title =
+                    $item.itemInfo.title.displayValue
+
+                Creator =
+                    $creatorText
+
+                ReleaseDate =
+                    $releaseDate
+
+                ASIN =
+                    $item.asin
+
+                ImageURL =
+                    $imageUrl
+
+                URL =
+                    $item.detailPageURL
             }
 
 
@@ -291,11 +299,11 @@ function Search-AmazonItem {
         }
 
 
-        # Show results
         $resultGrid.ItemsSource = $results
 
         $statusText.Text =
             "$selectedCategory / $($results.Count) results"
+
     }
     catch {
 
