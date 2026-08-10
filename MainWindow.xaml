@@ -18,9 +18,7 @@
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
-        <!-- ===================================== -->
         <!-- タイトル -->
-        <!-- ===================================== -->
         <StackPanel
             Grid.Row="0"
             Margin="0,0,0,20">
@@ -40,9 +38,7 @@
         </StackPanel>
 
 
-        <!-- ===================================== -->
         <!-- 検索エリア -->
-        <!-- ===================================== -->
         <Border
             Grid.Row="1"
             Background="White"
@@ -68,6 +64,8 @@
                     SelectedIndex="0">
 
                     <ComboBoxItem Content="Books"/>
+                    <ComboBoxItem Content="Kindle"/>
+                    <ComboBoxItem Content="Movies"/>
 
                 </ComboBox>
 
@@ -98,9 +96,7 @@
         </Border>
 
 
-        <!-- ===================================== -->
         <!-- 検索結果見出し -->
-        <!-- ===================================== -->
         <Grid
             Grid.Row="2"
             Margin="0,0,0,8">
@@ -129,9 +125,7 @@
         </Grid>
 
 
-        <!-- ===================================== -->
-        <!-- 検索結果 DataGrid -->
-        <!-- ===================================== -->
+        <!-- 検索結果 -->
         <Border
             Grid.Row="3"
             Background="White"
@@ -153,9 +147,9 @@
 
                 <DataGrid.Columns>
 
-                    <!-- 表紙 -->
+                    <!-- 表紙 / パッケージ画像 -->
                     <DataGridTemplateColumn
-                        Header="Cover"
+                        Header="Image"
                         Width="100">
 
                         <DataGridTemplateColumn.CellTemplate>
@@ -181,17 +175,17 @@
                         Width="*" />
 
 
-                    <!-- 著者 -->
+                    <!-- 著者 / 監督 -->
                     <DataGridTextColumn
-                        Header="Author"
-                        Binding="{Binding Author}"
-                        Width="160" />
+                        Header="Creator"
+                        Binding="{Binding Creator}"
+                        Width="180" />
 
 
                     <!-- 発売日 -->
                     <DataGridTextColumn
-                        Header="Publication Date"
-                        Binding="{Binding PublicationDate}"
+                        Header="Release Date"
+                        Binding="{Binding ReleaseDate}"
                         Width="140" />
 
 

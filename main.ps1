@@ -1,8 +1,6 @@
 Add-Type -AssemblyName PresentationFramework
 
-# ==========================================
-# 設定ファイル読み込み
-# ==========================================
+# Load config
 $configPath = Join-Path $PSScriptRoot "config.json"
 
 if (-not (Test-Path $configPath)) {
@@ -16,9 +14,7 @@ if (-not (Test-Path $configPath)) {
 $config = Get-Content $configPath -Raw | ConvertFrom-Json
 
 
-# ==========================================
-# アクセストークン取得
-# ==========================================
+# Get access token
 $authBody = @{
     grant_type    = "client_credentials"
     client_id     = $config.CredentialId
@@ -34,25 +30,19 @@ $authParameters = @{
 }
 
 try {
-
     $authResponse = Invoke-RestMethod @authParameters
     $accessToken = $authResponse.access_token
-
 }
 catch {
-
     [System.Windows.MessageBox]::Show(
         $_.Exception.Message,
         "Authentication Error"
     )
-
     exit
 }
 
 
-# ==========================================
-# XAML読み込み
-# ==========================================
+# Load XAML
 $xamlPath = Join-Path $PSScriptRoot "MainWindow.xaml"
 
 if (-not (Test-Path $xamlPath)) {
@@ -69,18 +59,15 @@ $reader = New-Object System.Xml.XmlNodeReader ([xml]$xaml)
 $window = [Windows.Markup.XamlReader]::Load($reader)
 
 
-# ==========================================
-# WPFコントロール取得
-# ==========================================
+# Get controls
 $searchBox = $window.FindName("SearchBox")
 $searchButton = $window.FindName("SearchButton")
 $resultGrid = $window.FindName("ResultGrid")
 $statusText = $window.FindName("StatusText")
 $categoryBox = $window.FindName("CategoryBox")
 
-# ==========================================
-# Amazonボタンのクリック処理
-# ==========================================
+
+# Open Amazon product page
 $resultGrid.AddHandler(
     [System.Windows.Controls.Button]::ClickEvent,
     [System.Windows.RoutedEventHandler]{
@@ -92,11 +79,11 @@ $resultGrid.AddHandler(
             $button -and
             -not ($button -is [System.Windows.Controls.Button])
         ) {
-            $button = [System.Windows.Media.VisualTreeHelper]::GetParent($button)
+            $button =
+                [System.Windows.Media.VisualTreeHelper]::GetParent($button)
         }
 
         if ($button -and $button.Tag) {
-
             $url = $button.Tag.ToString()
 
             Start-Process $url
@@ -106,34 +93,51 @@ $resultGrid.AddHandler(
     }
 )
 
-# ==========================================
-# Amazon検索関数
-# ==========================================
+
+# Search Amazon
 function Search-AmazonItem {
 
-    # --------------------------------------
-    # 検索ワード取得
-    # --------------------------------------
     $keyword = $searchBox.Text.Trim()
 
     if ([string]::IsNullOrWhiteSpace($keyword)) {
-
         [System.Windows.MessageBox]::Show(
             "Please enter a keyword.",
             "Search"
         )
-
         return
     }
 
+    $selectedCategory =
+        $categoryBox.SelectedItem.Content.ToString()
 
-    # --------------------------------------
-    # Amazonへ送信する検索条件
-    # --------------------------------------
+
+    switch ($selectedCategory) {
+
+        "Books" {
+            $searchIndex = "Books"
+        }
+
+        "Kindle" {
+            $searchIndex = "KindleStore"
+        }
+
+        "Movies" {
+            $searchIndex = "MoviesAndTV"
+        }
+
+        default {
+            $searchIndex = "All"
+        }
+    }
+
+
+    $statusText.Text = "Searching..."
+
+
     $searchBody = @{
         partnerTag  = $config.PartnerTag
         keywords    = $keyword
-        searchIndex = "Books"
+        searchIndex = $searchIndex
         itemCount   = 10
 
         resources = @(
@@ -145,31 +149,19 @@ function Search-AmazonItem {
     }
 
 
-    # --------------------------------------
-    # JSONへ変換
-    # --------------------------------------
-    $searchJson = $searchBody | ConvertTo-Json -Depth 10
+    $searchJson =
+        $searchBody | ConvertTo-Json -Depth 10
+
+    $searchBytes =
+        [System.Text.Encoding]::UTF8.GetBytes($searchJson)
 
 
-    # --------------------------------------
-    # UTF-8のバイト列へ変換
-    # PowerShell 5.1の日本語送信対策
-    # --------------------------------------
-    $searchBytes = [System.Text.Encoding]::UTF8.GetBytes($searchJson)
-
-
-    # --------------------------------------
-    # HTTPヘッダー
-    # --------------------------------------
     $headers = @{
         Authorization   = "Bearer $accessToken"
         "x-marketplace" = $config.Marketplace
     }
 
 
-    # --------------------------------------
-    # Invoke-WebRequest用パラメータ
-    # --------------------------------------
     $searchParameters = @{
         Uri         = $config.SearchUrl
         Method      = "Post"
@@ -179,71 +171,111 @@ function Search-AmazonItem {
     }
 
 
-    # --------------------------------------
-    # Creators APIへリクエスト
-    # --------------------------------------
     try {
 
-        # PowerShell 5.1で日本語レスポンスが
-        # 文字化けしないように生データで受信
-        $webResponse = Invoke-WebRequest @searchParameters
+        $webResponse =
+            Invoke-WebRequest @searchParameters
 
-        $responseBytes = $webResponse.RawContentStream.ToArray()
+        $responseBytes =
+            $webResponse.RawContentStream.ToArray()
 
         $responseText =
-            [System.Text.Encoding]::UTF8.GetString($responseBytes)
+            [System.Text.Encoding]::UTF8.GetString(
+                $responseBytes
+            )
 
-        $response = $responseText | ConvertFrom-Json
+        $response =
+            $responseText | ConvertFrom-Json
 
 
-        # ----------------------------------
-        # DataGrid用データ作成
-        # ----------------------------------
         $results = @()
+
 
         foreach ($item in $response.searchResult.items) {
 
-            # 著者
-            $authors = @()
+            $creators = @()
 
-            foreach ($contributor in $item.itemInfo.byLineInfo.contributors) {
 
-                if ($contributor.roleType -eq "author") {
-                    $authors += $contributor.name
+            if ($item.itemInfo.byLineInfo.contributors) {
+
+                foreach (
+                    $contributor in
+                    $item.itemInfo.byLineInfo.contributors
+                ) {
+
+                    if (
+                        $selectedCategory -eq "Books" -or
+                        $selectedCategory -eq "Kindle"
+                    ) {
+
+                        if (
+                            $contributor.roleType -eq "author"
+                        ) {
+                            $creators += $contributor.name
+                        }
+                    }
+
+                    elseif (
+                        $selectedCategory -eq "Movies"
+                    ) {
+
+                        if (
+                            $contributor.roleType -eq "director"
+                        ) {
+                            $creators += $contributor.name
+                        }
+                    }
                 }
             }
 
-            $authorText = $authors -join ", "
 
-            # 出版日
-            $publicationDate =
-                $item.itemInfo.contentInfo.publicationDate.displayValue
+            $creatorText =
+                $creators -join ", "
 
-            # 表紙画像URL
-            $imageUrl =
+
+            $releaseDate = ""
+
+            if (
+                $item.itemInfo.contentInfo.publicationDate
+            ) {
+                $releaseDate =
+                    $item.itemInfo.contentInfo.publicationDate.displayValue
+            }
+
+
+            $imageUrl = ""
+
+            if (
                 $item.images.primary.medium.url
+            ) {
+                $imageUrl =
+                    $item.images.primary.medium.url
+            }
+
 
             $result = [PSCustomObject]@{
-                Title           = $item.itemInfo.title.displayValue
-                Author          = $authorText
-                PublicationDate = $publicationDate
-                ASIN            = $item.asin
-                ImageURL        = $imageUrl
-                URL             = $item.detailPageURL
+                Title       = $item.itemInfo.title.displayValue
+                Creator     = $creatorText
+                ReleaseDate = $releaseDate
+                ASIN        = $item.asin
+                ImageURL    = $imageUrl
+                URL         = $item.detailPageURL
             }
+
 
             $results += $result
         }
 
 
-        # ----------------------------------
-        # DataGridへ表示
-        # ----------------------------------
         $resultGrid.ItemsSource = $results
-        $statusText.Text = "$($results.Count) 件"
+
+        $statusText.Text =
+            "$selectedCategory / $($results.Count) results"
 
     }
     catch {
+
+        $statusText.Text = "Error"
 
         [System.Windows.MessageBox]::Show(
             $_.Exception.Message,
@@ -253,31 +285,21 @@ function Search-AmazonItem {
 }
 
 
-# ==========================================
-# 検索ボタン
-# ==========================================
+# Search button
 $searchButton.Add_Click({
-
     Search-AmazonItem
-
 })
 
 
-# ==========================================
-# Enterキーでも検索
-# ==========================================
+# Enter key
 $searchBox.Add_KeyDown({
 
     if ($_.Key -eq "Return") {
-
         Search-AmazonItem
-
     }
 
 })
 
 
-# ==========================================
-# WPF表示
-# ==========================================
+# Show window
 $window.ShowDialog() | Out-Null
