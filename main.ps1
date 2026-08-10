@@ -66,7 +66,6 @@ if (-not (Test-Path $xamlPath)) {
 $xaml = Get-Content $xamlPath -Raw
 
 $reader = New-Object System.Xml.XmlNodeReader ([xml]$xaml)
-
 $window = [Windows.Markup.XamlReader]::Load($reader)
 
 
@@ -75,7 +74,7 @@ $window = [Windows.Markup.XamlReader]::Load($reader)
 # ==========================================
 $searchBox = $window.FindName("SearchBox")
 $searchButton = $window.FindName("SearchButton")
-$resultBox = $window.FindName("ResultBox")
+$resultGrid = $window.FindName("ResultGrid")
 
 
 # ==========================================
@@ -90,12 +89,13 @@ function Search-AmazonItem {
 
     if ([string]::IsNullOrWhiteSpace($keyword)) {
 
-        $resultBox.Text = "Please enter a keyword."
+        [System.Windows.MessageBox]::Show(
+            "Please enter a keyword.",
+            "Search"
+        )
 
         return
     }
-
-    $resultBox.Text = "Searching..."
 
 
     # --------------------------------------
@@ -117,7 +117,7 @@ function Search-AmazonItem {
 
     # --------------------------------------
     # UTF-8のバイト列へ変換
-    # PowerShell 5.1の日本語文字化け対策
+    # PowerShell 5.1の日本語送信対策
     # --------------------------------------
     $searchBytes = [System.Text.Encoding]::UTF8.GetBytes($searchJson)
 
@@ -132,7 +132,7 @@ function Search-AmazonItem {
 
 
     # --------------------------------------
-    # Invoke-RestMethod用パラメータ
+    # Invoke-WebRequest用パラメータ
     # --------------------------------------
     $searchParameters = @{
         Uri         = $config.SearchUrl
@@ -148,33 +148,53 @@ function Search-AmazonItem {
     # --------------------------------------
     try {
 
-    $webResponse = Invoke-WebRequest @searchParameters
+        # PowerShell 5.1で日本語レスポンスが
+        # 文字化けしないように生データで受信
+        $webResponse = Invoke-WebRequest @searchParameters
 
-    $responseBytes = $webResponse.RawContentStream.ToArray()
+        $responseBytes = $webResponse.RawContentStream.ToArray()
 
-    $responseText = [System.Text.Encoding]::UTF8.GetString($responseBytes)
+        $responseText =
+            [System.Text.Encoding]::UTF8.GetString($responseBytes)
 
-    $response = $responseText | ConvertFrom-Json
+        $response = $responseText | ConvertFrom-Json
 
-    $resultBox.Text = $response |
-        ConvertTo-Json -Depth 20
+
+        # ----------------------------------
+        # DataGrid用データ作成
+        # ----------------------------------
+        $results = @()
+
+        foreach ($item in $response.searchResult.items) {
+
+            $result = [PSCustomObject]@{
+                Title = $item.itemInfo.title.displayValue
+                ASIN  = $item.asin
+                URL   = $item.detailPageURL
+            }
+
+            $results += $result
+        }
+
+
+        # ----------------------------------
+        # DataGridへ表示
+        # ----------------------------------
+        $resultGrid.ItemsSource = $results
+
     }
     catch {
 
-        $errorMessage = $_.Exception.Message
-
-        $resultBox.Text =
-            "Search error:`r`n`r`n" +
-            $errorMessage +
-            "`r`n`r`n" +
-            "Request JSON:`r`n" +
-            $searchJson
+        [System.Windows.MessageBox]::Show(
+            $_.Exception.Message,
+            "Search Error"
+        )
     }
 }
 
 
 # ==========================================
-# 検索ボタンをクリック
+# 検索ボタン
 # ==========================================
 $searchButton.Add_Click({
 
