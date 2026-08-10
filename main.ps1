@@ -111,6 +111,9 @@ $statusText =
 $categoryBox =
     $window.FindName("CategoryBox")
 
+$sortBox =
+    $window.FindName("SortBox")
+
 
 # ==========================================
 # Open Amazon product page
@@ -122,7 +125,8 @@ $resultGrid.AddHandler(
 
         param($sender, $e)
 
-        $button = $e.OriginalSource
+        $button =
+            $e.OriginalSource
 
         while (
             $button -and
@@ -139,7 +143,8 @@ $resultGrid.AddHandler(
 
             Start-Process $button.Tag.ToString()
 
-            $e.Handled = $true
+            $e.Handled =
+                $true
         }
     }
 )
@@ -151,7 +156,8 @@ $audibleGrid.AddHandler(
 
         param($sender, $e)
 
-        $button = $e.OriginalSource
+        $button =
+            $e.OriginalSource
 
         while (
             $button -and
@@ -168,17 +174,18 @@ $audibleGrid.AddHandler(
 
             Start-Process $button.Tag.ToString()
 
-            $e.Handled = $true
+            $e.Handled =
+                $true
         }
     }
 )
 
 
 # ==========================================
-# Grid display
+# UI mode
 # ==========================================
 
-function Set-GridVisibility {
+function Set-CategoryUI {
 
     param(
         [Parameter(Mandatory)]
@@ -192,6 +199,9 @@ function Set-GridVisibility {
 
         $audibleGridBorder.Visibility =
             [System.Windows.Visibility]::Visible
+
+        $sortBox.Visibility =
+            [System.Windows.Visibility]::Visible
     }
     else {
 
@@ -199,6 +209,9 @@ function Set-GridVisibility {
             [System.Windows.Visibility]::Visible
 
         $audibleGridBorder.Visibility =
+            [System.Windows.Visibility]::Collapsed
+
+        $sortBox.Visibility =
             [System.Windows.Visibility]::Collapsed
     }
 }
@@ -223,13 +236,18 @@ function Start-AmazonSearch {
         return
     }
 
+
     $selectedCategory =
         $categoryBox.SelectedItem.Content.ToString()
 
-    Set-GridVisibility -Category $selectedCategory
+
+    Set-CategoryUI `
+        -Category $selectedCategory
+
 
     $statusText.Text =
         "Searching..."
+
 
     try {
 
@@ -237,11 +255,14 @@ function Start-AmazonSearch {
 
             "Books" {
 
+                $searchParams = @{
+                    Keyword     = $keyword
+                    Config      = $config
+                    AccessToken = $accessToken
+                }
+
                 $results =
-                    Search-Books `
-                        -Keyword $keyword `
-                        -Config $config `
-                        -AccessToken $accessToken
+                    Search-Books @searchParams
 
                 $resultGrid.ItemsSource =
                     $results
@@ -249,14 +270,18 @@ function Start-AmazonSearch {
                 $audibleGrid.ItemsSource =
                     $null
             }
+
 
             "Kindle" {
 
+                $searchParams = @{
+                    Keyword     = $keyword
+                    Config      = $config
+                    AccessToken = $accessToken
+                }
+
                 $results =
-                    Search-Kindle `
-                        -Keyword $keyword `
-                        -Config $config `
-                        -AccessToken $accessToken
+                    Search-Kindle @searchParams
 
                 $resultGrid.ItemsSource =
                     $results
@@ -264,14 +289,18 @@ function Start-AmazonSearch {
                 $audibleGrid.ItemsSource =
                     $null
             }
+
 
             "Movies" {
 
+                $searchParams = @{
+                    Keyword     = $keyword
+                    Config      = $config
+                    AccessToken = $accessToken
+                }
+
                 $results =
-                    Search-Movies `
-                        -Keyword $keyword `
-                        -Config $config `
-                        -AccessToken $accessToken
+                    Search-Movies @searchParams
 
                 $resultGrid.ItemsSource =
                     $results
@@ -279,14 +308,22 @@ function Start-AmazonSearch {
                 $audibleGrid.ItemsSource =
                     $null
             }
+
 
             "Audible" {
 
+                $sortBy =
+                    $sortBox.SelectedItem.Tag.ToString()
+
+                $searchParams = @{
+                    Keyword     = $keyword
+                    Config      = $config
+                    AccessToken = $accessToken
+                    SortBy      = $sortBy
+                }
+
                 $results =
-                    Search-Audible `
-                        -Keyword $keyword `
-                        -Config $config `
-                        -AccessToken $accessToken
+                    Search-Audible @searchParams
 
                 $audibleGrid.ItemsSource =
                     $results
@@ -295,11 +332,14 @@ function Start-AmazonSearch {
                     $null
             }
 
+
             default {
 
-                $results = @()
+                $results =
+                    @()
             }
         }
+
 
         $statusText.Text =
             "$selectedCategory / $($results.Count) results"
@@ -329,7 +369,8 @@ $categoryBox.Add_SelectionChanged({
         $selectedCategory =
             $categoryBox.SelectedItem.Content.ToString()
 
-        Set-GridVisibility -Category $selectedCategory
+        Set-CategoryUI `
+            -Category $selectedCategory
     }
 })
 
@@ -362,7 +403,7 @@ $searchBox.Add_KeyDown({
 # Initial display
 # ==========================================
 
-Set-GridVisibility -Category "Books"
+Set-CategoryUI -Category "Books"
 
 
 # ==========================================

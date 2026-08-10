@@ -18,7 +18,9 @@ function Invoke-AmazonSearch {
 
         [int]$ItemCount = 10,
 
-        [int]$ItemPage = 1
+        [int]$ItemPage = 1,
+
+        [string]$SortBy = ""
     )
 
     $searchBody = @{
@@ -28,6 +30,10 @@ function Invoke-AmazonSearch {
         itemCount   = $ItemCount
         itemPage    = $ItemPage
         resources   = $Resources
+    }
+
+    if (-not [string]::IsNullOrWhiteSpace($SortBy)) {
+        $searchBody.sortBy = $SortBy
     }
 
     $searchJson =
@@ -53,9 +59,7 @@ function Invoke-AmazonSearch {
     }
 
     $webResponse =
-        Invoke-WebRequest `
-            @searchParameters `
-            -UseBasicParsing
+        Invoke-WebRequest @searchParameters -UseBasicParsing
 
     $responseBytes =
         $webResponse.RawContentStream.ToArray()

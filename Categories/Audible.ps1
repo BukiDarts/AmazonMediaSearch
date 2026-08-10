@@ -8,7 +8,9 @@
         $Config,
 
         [Parameter(Mandatory)]
-        [string]$AccessToken
+        [string]$AccessToken,
+
+        [string]$SortBy = "Relevance"
     )
 
     $resources = @(
@@ -28,13 +30,10 @@
 
     $results = @()
 
-    # Used to prevent duplicate ASINs
     $foundAsins = @{}
 
 
-    # ======================================
     # Get up to 10 pages
-    # ======================================
     for ($page = 1; $page -le 10; $page++) {
 
         $searchParams = @{
@@ -45,17 +44,15 @@
             AccessToken = $AccessToken
             ItemCount   = 10
             ItemPage    = $page
+            SortBy      = $SortBy
         }
 
         $response =
             Invoke-AmazonSearch @searchParams
 
-
         $pageItems =
             @($response.searchResult.items)
 
-
-        # No more results
         if ($pageItems.Count -eq 0) {
             break
         }
@@ -63,9 +60,7 @@
 
         foreach ($item in $pageItems) {
 
-            # ----------------------------------
-            # Check product group
-            # ----------------------------------
+            # Product group
             $productGroup = ""
 
             if (
@@ -76,15 +71,12 @@
                     $item.itemInfo.classifications.productGroup.displayValue
             }
 
-            # Skip non-Audible products
             if ($productGroup -ne "Audible") {
                 continue
             }
 
 
-            # ----------------------------------
-            # Skip duplicate ASIN
-            # ----------------------------------
+            # Duplicate check
             if ($foundAsins.ContainsKey($item.asin)) {
                 continue
             }
@@ -92,9 +84,7 @@
             $foundAsins[$item.asin] = $true
 
 
-            # ----------------------------------
             # Contributors
-            # ----------------------------------
             $authors = @()
             $narrators = @()
             $publishers = @()
@@ -141,9 +131,7 @@
                 $publishers -join ", "
 
 
-            # ----------------------------------
             # Format
-            # ----------------------------------
             $formatText = ""
 
             if (
@@ -156,9 +144,7 @@
             }
 
 
-            # ----------------------------------
             # Release date
-            # ----------------------------------
             $releaseDate = ""
 
             if (
@@ -184,9 +170,7 @@
             }
 
 
-            # ----------------------------------
             # Price
-            # ----------------------------------
             $priceText = ""
             $priceStatus = ""
 
@@ -199,14 +183,12 @@
                     } |
                     Select-Object -First 1
 
-
                 if (-not $buyBoxListing) {
 
                     $buyBoxListing =
                         $item.offersV2.listings |
                         Select-Object -First 1
                 }
-
 
                 if ($buyBoxListing) {
 
@@ -220,10 +202,7 @@
                         $buyBoxListing.availability.type
 
 
-                    # Preorder
-                    if (
-                        $availabilityType -eq "PREORDER"
-                    ) {
+                    if ($availabilityType -eq "PREORDER") {
 
                         $priceStatus =
                             "予約"
@@ -235,17 +214,12 @@
                         }
                     }
 
-
-                    # Zero-price offer
-                    elseif (
-                        $currentAmount -eq 0
-                    ) {
+                    elseif ($currentAmount -eq 0) {
 
                         $priceStatus =
                             "追加料金なし"
 
                         $normalPrice = ""
-
 
                         if (
                             $buyBoxListing.price.savingBasis.money.displayAmount
@@ -270,7 +244,6 @@
                             }
                         }
 
-
                         if ($normalPrice) {
 
                             $priceText =
@@ -283,8 +256,6 @@
                         }
                     }
 
-
-                    # Normal price
                     else {
 
                         if ($currentPrice) {
@@ -300,9 +271,7 @@
             }
 
 
-            # ----------------------------------
             # Image URL
-            # ----------------------------------
             $imageUrl = ""
 
             if (
@@ -314,9 +283,7 @@
             }
 
 
-            # ----------------------------------
             # Result
-            # ----------------------------------
             $result = [PSCustomObject]@{
 
                 Title =
@@ -358,9 +325,6 @@
         }
 
 
-        # ======================================
-        # Stop if this was the last page
-        # ======================================
         if ($pageItems.Count -lt 10) {
             break
         }

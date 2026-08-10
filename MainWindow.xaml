@@ -18,6 +18,7 @@
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
+
         <StackPanel
             Grid.Row="0"
             Margin="0,0,0,20">
@@ -36,6 +37,7 @@
 
         </StackPanel>
 
+
         <Border
             Grid.Row="1"
             Background="White"
@@ -48,8 +50,10 @@
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="150"/>
                     <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="120"/>
                 </Grid.ColumnDefinitions>
+
 
                 <ComboBox
                     x:Name="CategoryBox"
@@ -66,6 +70,7 @@
 
                 </ComboBox>
 
+
                 <TextBox
                     x:Name="SearchBox"
                     Grid.Column="1"
@@ -75,9 +80,39 @@
                     Margin="0,0,10,0"
                     VerticalContentAlignment="Center" />
 
+
+                <ComboBox
+                    x:Name="SortBox"
+                    Grid.Column="2"
+                    Width="160"
+                    Height="38"
+                    Margin="0,0,10,0"
+                    FontSize="13"
+                    SelectedIndex="0"
+                    Visibility="Collapsed">
+
+                    <ComboBoxItem
+                        Content="関連度順"
+                        Tag="Relevance" />
+
+                    <ComboBoxItem
+                        Content="新着順"
+                        Tag="NewestArrivals" />
+
+                    <ComboBoxItem
+                        Content="価格が安い順"
+                        Tag="Price:LowToHigh" />
+
+                    <ComboBoxItem
+                        Content="価格が高い順"
+                        Tag="Price:HighToLow" />
+
+                </ComboBox>
+
+
                 <Button
                     x:Name="SearchButton"
-                    Grid.Column="2"
+                    Grid.Column="3"
                     Height="38"
                     Content="Search"
                     FontSize="14"
@@ -87,6 +122,7 @@
             </Grid>
 
         </Border>
+
 
         <Grid
             Grid.Row="2"
@@ -114,6 +150,7 @@
                 VerticalAlignment="Center" />
 
         </Grid>
+
 
         <Grid Grid.Row="3">
 
@@ -158,6 +195,7 @@
 
                         </DataGridTemplateColumn>
 
+
                         <DataGridTextColumn
                             Header="Title"
                             Binding="{Binding Title}"
@@ -177,6 +215,7 @@
                             Header="ASIN"
                             Binding="{Binding ASIN}"
                             Width="120" />
+
 
                         <DataGridTemplateColumn
                             Header="Amazon"
@@ -204,6 +243,7 @@
 
             </Border>
 
+
             <!-- Audible -->
             <Border
                 x:Name="AudibleGridBorder"
@@ -219,7 +259,7 @@
                     CanUserAddRows="False"
                     CanUserDeleteRows="False"
                     SelectionMode="Single"
-                    RowHeight="165"
+                    MinRowHeight="140"
                     HeadersVisibility="None"
                     GridLinesVisibility="Horizontal"
                     BorderThickness="0"
@@ -260,6 +300,7 @@
                                             <RowDefinition Height="Auto"/>
                                         </Grid.RowDefinitions>
 
+
                                         <TextBlock
                                             Grid.Row="0"
                                             Text="{Binding Title}"
@@ -268,12 +309,14 @@
                                             Foreground="#222222"
                                             TextWrapping="Wrap" />
 
+
                                         <TextBlock
                                             Grid.Row="1"
                                             Text="{Binding Author}"
                                             FontSize="14"
                                             Foreground="#444444"
                                             Margin="0,5,0,0" />
+
 
                                         <StackPanel
                                             Grid.Row="2"
@@ -306,6 +349,7 @@
 
                                             </StackPanel.Style>
 
+
                                             <TextBlock
                                                 Text="ナレーション: "
                                                 FontSize="13"
@@ -318,12 +362,14 @@
 
                                         </StackPanel>
 
+
                                         <TextBlock
                                             Grid.Row="3"
                                             Text="{Binding Publisher}"
                                             FontSize="12"
                                             Foreground="#777777"
                                             Margin="0,4,0,0" />
+
 
                                         <StackPanel
                                             Grid.Row="4"
@@ -359,6 +405,7 @@
 
                                             </StackPanel>
 
+
                                             <StackPanel
                                                 Orientation="Horizontal"
                                                 Margin="0,4,0,0">
@@ -388,6 +435,7 @@
                                                     </Style>
 
                                                 </StackPanel.Style>
+
 
                                                 <TextBlock
                                                     Text="{Binding PriceStatus}"
