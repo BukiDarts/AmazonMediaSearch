@@ -107,10 +107,13 @@ function Search-AmazonItem {
         return
     }
 
+
+    # Get selected category
     $selectedCategory =
         $categoryBox.SelectedItem.Content.ToString()
 
 
+    # Convert UI category to Amazon SearchIndex
     switch ($selectedCategory) {
 
         "Books" {
@@ -134,6 +137,7 @@ function Search-AmazonItem {
     $statusText.Text = "Searching..."
 
 
+    # Build request body
     $searchBody = @{
         partnerTag  = $config.PartnerTag
         keywords    = $keyword
@@ -152,10 +156,13 @@ function Search-AmazonItem {
     $searchJson =
         $searchBody | ConvertTo-Json -Depth 10
 
+
+    # UTF-8 request body
     $searchBytes =
         [System.Text.Encoding]::UTF8.GetBytes($searchJson)
 
 
+    # HTTP headers
     $headers = @{
         Authorization   = "Bearer $accessToken"
         "x-marketplace" = $config.Marketplace
@@ -173,9 +180,12 @@ function Search-AmazonItem {
 
     try {
 
+        # Call Creators API
         $webResponse =
             Invoke-WebRequest @searchParameters -UseBasicParsing
 
+
+        # Decode UTF-8 response
         $responseBytes =
             $webResponse.RawContentStream.ToArray()
 
@@ -188,13 +198,16 @@ function Search-AmazonItem {
             $responseText | ConvertFrom-Json
 
 
+        # DataGrid results
         $results = @()
 
 
         foreach ($item in $response.searchResult.items) {
 
+            # ==============================
+            # Creator
+            # ==============================
             $creators = @()
-
 
             if ($item.itemInfo.byLineInfo.contributors) {
 
@@ -203,26 +216,28 @@ function Search-AmazonItem {
                     $item.itemInfo.byLineInfo.contributors
                 ) {
 
+                    # Books / Kindle
                     if (
                         $selectedCategory -eq "Books" -or
                         $selectedCategory -eq "Kindle"
                     ) {
 
-                        if (
-                            $contributor.roleType -eq "author"
-                        ) {
+                        if ($contributor.roleType -eq "author") {
                             $creators += $contributor.name
                         }
                     }
 
-                    elseif (
-                        $selectedCategory -eq "Movies"
-                    ) {
+                    # Movies
+                    elseif ($selectedCategory -eq "Movies") {
 
-                        if (
-                            $contributor.roleType -eq "director"
-                        ) {
-                            $creators += $contributor.name
+                        if ($contributor.roleType -eq "director") {
+                            $creators +=
+                                "Director: $($contributor.name)"
+                        }
+
+                        elseif ($contributor.roleType -eq "actor") {
+                            $creators +=
+                                "Actor: $($contributor.name)"
                         }
                     }
                 }
@@ -233,6 +248,9 @@ function Search-AmazonItem {
                 $creators -join ", "
 
 
+            # ==============================
+            # Release date
+            # ==============================
             $releaseDate = ""
 
             if (
@@ -243,6 +261,9 @@ function Search-AmazonItem {
             }
 
 
+            # ==============================
+            # Image URL
+            # ==============================
             $imageUrl = ""
 
             if (
@@ -253,6 +274,9 @@ function Search-AmazonItem {
             }
 
 
+            # ==============================
+            # DataGrid row
+            # ==============================
             $result = [PSCustomObject]@{
                 Title       = $item.itemInfo.title.displayValue
                 Creator     = $creatorText
@@ -267,11 +291,11 @@ function Search-AmazonItem {
         }
 
 
+        # Show results
         $resultGrid.ItemsSource = $results
 
         $statusText.Text =
             "$selectedCategory / $($results.Count) results"
-
     }
     catch {
 
