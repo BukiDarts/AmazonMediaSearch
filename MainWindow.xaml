@@ -2,7 +2,7 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     Title="Amazon Search"
-    Height="550"
+    Height="650"
     Width="1200"
     WindowStartupLocation="CenterScreen">
 
@@ -39,39 +39,63 @@
             AutoGenerateColumns="False"
             IsReadOnly="True"
             CanUserAddRows="False"
-            SelectionMode="Single">
+            SelectionMode="Single"
+            RowHeight="110">
 
             <DataGrid.Columns>
 
+                <!-- 表紙画像 -->
+                <DataGridTemplateColumn
+                    Header="Cover"
+                    Width="90">
+
+                    <DataGridTemplateColumn.CellTemplate>
+
+                        <DataTemplate>
+
+                            <Image
+                                Source="{Binding ImageURL}"
+                                Width="70"
+                                Height="100"
+                                Stretch="Uniform"
+                                Margin="5" />
+
+                        </DataTemplate>
+
+                    </DataGridTemplateColumn.CellTemplate>
+
+                </DataGridTemplateColumn>
+
+
+                <!-- タイトル -->
                 <DataGridTextColumn
                     Header="Title"
                     Binding="{Binding Title}"
                     Width="*" />
 
+                <!-- 著者 -->
                 <DataGridTextColumn
                     Header="Author"
                     Binding="{Binding Author}"
-                    Width="160" />
+                    Width="150" />
 
+                <!-- 発売日 -->
                 <DataGridTextColumn
                     Header="Publication Date"
                     Binding="{Binding PublicationDate}"
                     Width="130" />
 
+                <!-- ASIN -->
                 <DataGridTextColumn
                     Header="ASIN"
                     Binding="{Binding ASIN}"
                     Width="110" />
 
-                <DataGridTextColumn
-                    Header="Image URL"
-                    Binding="{Binding ImageURL}"
-                    Width="220" />
-
+                <!-- Amazon URL -->
                 <DataGridTextColumn
                     Header="Amazon URL"
                     Binding="{Binding URL}"
-                    Width="260" />
+                    Width="250" />
 
             </DataGrid.Columns>
 
