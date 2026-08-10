@@ -23,221 +23,349 @@
         "offersV2.listings.isBuyBoxWinner"
     )
 
-    $searchKeyword = "$Keyword Audible"
-
-    $searchParams = @{
-        Keyword     = $searchKeyword
-        SearchIndex = "All"
-        Resources   = $resources
-        Config      = $Config
-        AccessToken = $AccessToken
-    }
-
-    $response = Invoke-AmazonSearch @searchParams
+    $searchKeyword =
+        "$Keyword Audible"
 
     $results = @()
 
-    foreach ($item in $response.searchResult.items) {
+    # Used to prevent duplicate ASINs
+    $foundAsins = @{}
 
-        # Check product group
-        $productGroup = ""
 
-        if ($item.itemInfo.classifications.productGroup) {
+    # ======================================
+    # Get up to 10 pages
+    # ======================================
+    for ($page = 1; $page -le 10; $page++) {
 
-            $productGroup =
-                $item.itemInfo.classifications.productGroup.displayValue
+        $searchParams = @{
+            Keyword     = $searchKeyword
+            SearchIndex = "All"
+            Resources   = $resources
+            Config      = $Config
+            AccessToken = $AccessToken
+            ItemCount   = 10
+            ItemPage    = $page
         }
 
-        # Skip non-Audible products
-        if ($productGroup -ne "Audible") {
-            continue
+        $response =
+            Invoke-AmazonSearch @searchParams
+
+
+        $pageItems =
+            @($response.searchResult.items)
+
+
+        # No more results
+        if ($pageItems.Count -eq 0) {
+            break
         }
 
 
-        # Contributors
-        $authors = @()
-        $narrators = @()
-        $publishers = @()
+        foreach ($item in $pageItems) {
 
-        if ($item.itemInfo.byLineInfo.contributors) {
+            # ----------------------------------
+            # Check product group
+            # ----------------------------------
+            $productGroup = ""
 
-            foreach ($contributor in $item.itemInfo.byLineInfo.contributors) {
+            if (
+                $item.itemInfo.classifications.productGroup
+            ) {
 
-                switch ($contributor.roleType) {
+                $productGroup =
+                    $item.itemInfo.classifications.productGroup.displayValue
+            }
 
-                    "author" {
-                        $authors += $contributor.name
-                    }
+            # Skip non-Audible products
+            if ($productGroup -ne "Audible") {
+                continue
+            }
 
-                    "narrator" {
-                        $narrators += $contributor.name
-                    }
 
-                    "publisher" {
-                        $publishers += $contributor.name
+            # ----------------------------------
+            # Skip duplicate ASIN
+            # ----------------------------------
+            if ($foundAsins.ContainsKey($item.asin)) {
+                continue
+            }
+
+            $foundAsins[$item.asin] = $true
+
+
+            # ----------------------------------
+            # Contributors
+            # ----------------------------------
+            $authors = @()
+            $narrators = @()
+            $publishers = @()
+
+            if (
+                $item.itemInfo.byLineInfo.contributors
+            ) {
+
+                foreach (
+                    $contributor in
+                    $item.itemInfo.byLineInfo.contributors
+                ) {
+
+                    switch ($contributor.roleType) {
+
+                        "author" {
+
+                            $authors +=
+                                $contributor.name
+                        }
+
+                        "narrator" {
+
+                            $narrators +=
+                                $contributor.name
+                        }
+
+                        "publisher" {
+
+                            $publishers +=
+                                $contributor.name
+                        }
                     }
                 }
             }
-        }
 
-        $authorText =
-            $authors -join ", "
+            $authorText =
+                $authors -join ", "
 
-        $narratorText =
-            $narrators -join ", "
+            $narratorText =
+                $narrators -join ", "
 
-        $publisherText =
-            $publishers -join ", "
-
-
-        # Format
-        $formatText = ""
-
-        if ($item.itemInfo.technicalInfo.formats.displayValues) {
-
-            $formatText =
-                $item.itemInfo.technicalInfo.formats.displayValues -join ", "
-        }
+            $publisherText =
+                $publishers -join ", "
 
 
-        # Release date
-        $releaseDate = ""
+            # ----------------------------------
+            # Format
+            # ----------------------------------
+            $formatText = ""
 
-        if ($item.itemInfo.contentInfo.publicationDate) {
+            if (
+                $item.itemInfo.technicalInfo.formats.displayValues
+            ) {
 
-            $rawReleaseDate =
-                $item.itemInfo.contentInfo.publicationDate.displayValue
-
-            try {
-
-                $releaseDate =
-                    ([datetime]$rawReleaseDate).ToString("yyyy/MM/dd")
-
+                $formatText =
+                    $item.itemInfo.technicalInfo.formats.displayValues `
+                    -join ", "
             }
-            catch {
 
-                $releaseDate =
-                    $rawReleaseDate
+
+            # ----------------------------------
+            # Release date
+            # ----------------------------------
+            $releaseDate = ""
+
+            if (
+                $item.itemInfo.contentInfo.publicationDate
+            ) {
+
+                $rawReleaseDate =
+                    $item.itemInfo.contentInfo.publicationDate.displayValue
+
+                try {
+
+                    $releaseDate =
+                        ([datetime]$rawReleaseDate).ToString(
+                            "yyyy/MM/dd"
+                        )
+
+                }
+                catch {
+
+                    $releaseDate =
+                        $rawReleaseDate
+                }
             }
-        }
 
 
-        # Price
-        $priceText = ""
-        $priceStatus = ""
+            # ----------------------------------
+            # Price
+            # ----------------------------------
+            $priceText = ""
+            $priceStatus = ""
 
-        if ($item.offersV2.listings) {
-
-            $buyBoxListing =
-                $item.offersV2.listings |
-                Where-Object {
-                    $_.isBuyBoxWinner -eq $true
-                } |
-                Select-Object -First 1
-
-            if (-not $buyBoxListing) {
+            if ($item.offersV2.listings) {
 
                 $buyBoxListing =
                     $item.offersV2.listings |
+                    Where-Object {
+                        $_.isBuyBoxWinner -eq $true
+                    } |
                     Select-Object -First 1
-            }
 
-            if ($buyBoxListing) {
 
-                $currentPrice =
-                    $buyBoxListing.price.money.displayAmount
+                if (-not $buyBoxListing) {
 
-                $currentAmount =
-                    $buyBoxListing.price.money.amount
-
-                $availabilityType =
-                    $buyBoxListing.availability.type
-
-                if ($availabilityType -eq "PREORDER") {
-
-                    $priceStatus = "予約"
-
-                    if ($currentPrice) {
-                        $priceText = $currentPrice
-                    }
+                    $buyBoxListing =
+                        $item.offersV2.listings |
+                        Select-Object -First 1
                 }
-                elseif ($currentAmount -eq 0) {
 
-                    $priceStatus = "追加料金なし"
 
-                    $normalPrice = ""
+                if ($buyBoxListing) {
 
-                    if ($buyBoxListing.price.savingBasis.money.displayAmount) {
+                    $currentPrice =
+                        $buyBoxListing.price.money.displayAmount
 
-                        $normalPrice =
-                            $buyBoxListing.price.savingBasis.money.displayAmount
-                    }
-                    else {
+                    $currentAmount =
+                        $buyBoxListing.price.money.amount
 
-                        $normalListing =
-                            $item.offersV2.listings |
-                            Where-Object {
-                                $_.price.money.amount -gt 0
-                            } |
-                            Select-Object -First 1
+                    $availabilityType =
+                        $buyBoxListing.availability.type
 
-                        if ($normalListing) {
 
-                            $normalPrice =
-                                $normalListing.price.money.displayAmount
+                    # Preorder
+                    if (
+                        $availabilityType -eq "PREORDER"
+                    ) {
+
+                        $priceStatus =
+                            "予約"
+
+                        if ($currentPrice) {
+
+                            $priceText =
+                                $currentPrice
                         }
                     }
 
-                    if ($normalPrice) {
 
-                        $priceText =
-                            "通常 $normalPrice"
+                    # Zero-price offer
+                    elseif (
+                        $currentAmount -eq 0
+                    ) {
+
+                        $priceStatus =
+                            "追加料金なし"
+
+                        $normalPrice = ""
+
+
+                        if (
+                            $buyBoxListing.price.savingBasis.money.displayAmount
+                        ) {
+
+                            $normalPrice =
+                                $buyBoxListing.price.savingBasis.money.displayAmount
+                        }
+                        else {
+
+                            $normalListing =
+                                $item.offersV2.listings |
+                                Where-Object {
+                                    $_.price.money.amount -gt 0
+                                } |
+                                Select-Object -First 1
+
+                            if ($normalListing) {
+
+                                $normalPrice =
+                                    $normalListing.price.money.displayAmount
+                            }
+                        }
+
+
+                        if ($normalPrice) {
+
+                            $priceText =
+                                "通常 $normalPrice"
+                        }
+                        else {
+
+                            $priceText =
+                                "￥0"
+                        }
                     }
+
+
+                    # Normal price
                     else {
 
-                        $priceText =
-                            "￥0"
-                    }
-                }
-                else {
+                        if ($currentPrice) {
 
-                    if ($currentPrice) {
+                            $priceStatus =
+                                "価格"
 
-                        $priceStatus = "価格"
-                        $priceText = $currentPrice
+                            $priceText =
+                                $currentPrice
+                        }
                     }
                 }
             }
-        }
 
 
-        # Image URL
-        $imageUrl = ""
+            # ----------------------------------
+            # Image URL
+            # ----------------------------------
+            $imageUrl = ""
 
-        if ($item.images.primary.medium.url) {
-
-            $imageUrl =
+            if (
                 $item.images.primary.medium.url
+            ) {
+
+                $imageUrl =
+                    $item.images.primary.medium.url
+            }
+
+
+            # ----------------------------------
+            # Result
+            # ----------------------------------
+            $result = [PSCustomObject]@{
+
+                Title =
+                    $item.itemInfo.title.displayValue
+
+                Author =
+                    $authorText
+
+                Narrator =
+                    $narratorText
+
+                Publisher =
+                    $publisherText
+
+                Format =
+                    $formatText
+
+                ReleaseDate =
+                    $releaseDate
+
+                PriceStatus =
+                    $priceStatus
+
+                Price =
+                    $priceText
+
+                ASIN =
+                    $item.asin
+
+                ImageURL =
+                    $imageUrl
+
+                URL =
+                    $item.detailPageURL
+            }
+
+            $results +=
+                $result
         }
 
 
-        # Result
-        $result = [PSCustomObject]@{
-            Title       = $item.itemInfo.title.displayValue
-            Author      = $authorText
-            Narrator    = $narratorText
-            Publisher   = $publisherText
-            Format      = $formatText
-            ReleaseDate = $releaseDate
-            PriceStatus = $priceStatus
-            Price       = $priceText
-            ASIN        = $item.asin
-            ImageURL    = $imageUrl
-            URL         = $item.detailPageURL
+        # ======================================
+        # Stop if this was the last page
+        # ======================================
+        if ($pageItems.Count -lt 10) {
+            break
         }
-
-        $results += $result
     }
+
 
     return $results
 }

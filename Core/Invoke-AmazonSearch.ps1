@@ -14,22 +14,30 @@ function Invoke-AmazonSearch {
         $Config,
 
         [Parameter(Mandatory)]
-        [string]$AccessToken
+        [string]$AccessToken,
+
+        [int]$ItemCount = 10,
+
+        [int]$ItemPage = 1
     )
 
     $searchBody = @{
         partnerTag  = $Config.PartnerTag
         keywords    = $Keyword
         searchIndex = $SearchIndex
-        itemCount   = 10
+        itemCount   = $ItemCount
+        itemPage    = $ItemPage
         resources   = $Resources
     }
 
     $searchJson =
-        $searchBody | ConvertTo-Json -Depth 10
+        $searchBody |
+        ConvertTo-Json -Depth 10
 
     $searchBytes =
-        [System.Text.Encoding]::UTF8.GetBytes($searchJson)
+        [System.Text.Encoding]::UTF8.GetBytes(
+            $searchJson
+        )
 
     $headers = @{
         Authorization   = "Bearer $AccessToken"
@@ -45,7 +53,9 @@ function Invoke-AmazonSearch {
     }
 
     $webResponse =
-        Invoke-WebRequest @searchParameters -UseBasicParsing
+        Invoke-WebRequest `
+            @searchParameters `
+            -UseBasicParsing
 
     $responseBytes =
         $webResponse.RawContentStream.ToArray()
@@ -56,7 +66,8 @@ function Invoke-AmazonSearch {
         )
 
     $response =
-        $responseText | ConvertFrom-Json
+        $responseText |
+        ConvertFrom-Json
 
     return $response
 }
