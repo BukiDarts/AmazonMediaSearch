@@ -1,4 +1,4 @@
-<Window
+﻿<Window
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     Title="Amazon Search"
@@ -50,7 +50,6 @@
                     Width="90">
 
                     <DataGridTemplateColumn.CellTemplate>
-
                         <DataTemplate>
 
                             <Image
@@ -61,11 +60,9 @@
                                 Margin="5" />
 
                         </DataTemplate>
-
                     </DataGridTemplateColumn.CellTemplate>
 
                 </DataGridTemplateColumn>
-
 
                 <!-- タイトル -->
                 <DataGridTextColumn
@@ -91,11 +88,24 @@
                     Binding="{Binding ASIN}"
                     Width="110" />
 
-                <!-- Amazon URL -->
-                <DataGridTextColumn
-                    Header="Amazon URL"
-                    Binding="{Binding URL}"
-                    Width="250" />
+                <!-- Amazonリンクボタン -->
+                <DataGridTemplateColumn
+                    Header="Amazon"
+                    Width="130">
+
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+
+                            <Button
+                                Content="Amazonで開く"
+                                Tag="{Binding URL}"
+                                Padding="8,4"
+                                Margin="5" />
+
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+
+                </DataGridTemplateColumn>
 
             </DataGrid.Columns>
 

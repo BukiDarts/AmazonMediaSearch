@@ -76,6 +76,33 @@ $searchBox = $window.FindName("SearchBox")
 $searchButton = $window.FindName("SearchButton")
 $resultGrid = $window.FindName("ResultGrid")
 
+# ==========================================
+# Amazonボタンのクリック処理
+# ==========================================
+$resultGrid.AddHandler(
+    [System.Windows.Controls.Button]::ClickEvent,
+    [System.Windows.RoutedEventHandler]{
+        param($sender, $e)
+
+        $button = $e.OriginalSource
+
+        while (
+            $button -and
+            -not ($button -is [System.Windows.Controls.Button])
+        ) {
+            $button = [System.Windows.Media.VisualTreeHelper]::GetParent($button)
+        }
+
+        if ($button -and $button.Tag) {
+
+            $url = $button.Tag.ToString()
+
+            Start-Process $url
+
+            $e.Handled = $true
+        }
+    }
+)
 
 # ==========================================
 # Amazon検索関数
