@@ -75,6 +75,8 @@ $window = [Windows.Markup.XamlReader]::Load($reader)
 $searchBox = $window.FindName("SearchBox")
 $searchButton = $window.FindName("SearchButton")
 $resultGrid = $window.FindName("ResultGrid")
+$statusText = $window.FindName("StatusText")
+$categoryBox = $window.FindName("CategoryBox")
 
 # ==========================================
 # Amazonボタンのクリック処理
@@ -238,6 +240,7 @@ function Search-AmazonItem {
         # DataGridへ表示
         # ----------------------------------
         $resultGrid.ItemsSource = $results
+        $statusText.Text = "$($results.Count) 件"
 
     }
     catch {
