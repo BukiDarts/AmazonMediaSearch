@@ -115,91 +115,199 @@
 
         </Grid>
 
-        <Border
-            Grid.Row="3"
-            Background="White"
-            CornerRadius="8"
-            Padding="1">
+        <Grid Grid.Row="3">
 
-            <DataGrid
-                x:Name="ResultGrid"
-                AutoGenerateColumns="False"
-                IsReadOnly="True"
-                CanUserAddRows="False"
-                CanUserDeleteRows="False"
-                SelectionMode="Single"
-                RowHeight="120"
-                HeadersVisibility="Column"
-                GridLinesVisibility="Horizontal"
-                BorderThickness="0"
-                AlternatingRowBackground="#FAFAFA">
+            <!-- Existing grid for Books / Kindle / Movies -->
+            <Border
+                x:Name="ResultGridBorder"
+                Background="White"
+                CornerRadius="8"
+                Padding="1">
 
-                <DataGrid.Columns>
+                <DataGrid
+                    x:Name="ResultGrid"
+                    AutoGenerateColumns="False"
+                    IsReadOnly="True"
+                    CanUserAddRows="False"
+                    CanUserDeleteRows="False"
+                    SelectionMode="Single"
+                    RowHeight="120"
+                    HeadersVisibility="Column"
+                    GridLinesVisibility="Horizontal"
+                    BorderThickness="0"
+                    AlternatingRowBackground="#FAFAFA">
 
-                    <DataGridTemplateColumn
-                        Header="Image"
-                        Width="100">
+                    <DataGrid.Columns>
 
-                        <DataGridTemplateColumn.CellTemplate>
-                            <DataTemplate>
+                        <DataGridTemplateColumn
+                            Header="Image"
+                            Width="100">
 
-                                <Image
-                                    Source="{Binding ImageURL}"
-                                    Width="75"
-                                    Height="105"
-                                    Stretch="Uniform"
-                                    Margin="8" />
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
 
-                            </DataTemplate>
-                        </DataGridTemplateColumn.CellTemplate>
+                                    <Image
+                                        Source="{Binding ImageURL}"
+                                        Width="75"
+                                        Height="105"
+                                        Stretch="Uniform"
+                                        Margin="8" />
 
-                    </DataGridTemplateColumn>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
 
-                    <DataGridTextColumn
-                        Header="Title"
-                        Binding="{Binding Title}"
-                        Width="*" />
+                        </DataGridTemplateColumn>
 
-                    <DataGridTextColumn
-                        Header="Creator"
-                        Binding="{Binding Creator}"
-                        Width="200" />
+                        <DataGridTextColumn
+                            Header="Title"
+                            Binding="{Binding Title}"
+                            Width="*" />
 
-                    <DataGridTextColumn
-                        Header="Release Date"
-                        Binding="{Binding ReleaseDate}"
-                        Width="140" />
+                        <DataGridTextColumn
+                            Header="Creator"
+                            Binding="{Binding Creator}"
+                            Width="200" />
 
-                    <DataGridTextColumn
-                        Header="ASIN"
-                        Binding="{Binding ASIN}"
-                        Width="120" />
+                        <DataGridTextColumn
+                            Header="Release Date"
+                            Binding="{Binding ReleaseDate}"
+                            Width="140" />
 
-                    <DataGridTemplateColumn
-                        Header="Amazon"
-                        Width="140">
+                        <DataGridTextColumn
+                            Header="ASIN"
+                            Binding="{Binding ASIN}"
+                            Width="120" />
 
-                        <DataGridTemplateColumn.CellTemplate>
-                            <DataTemplate>
+                        <DataGridTemplateColumn
+                            Header="Amazon"
+                            Width="140">
 
-                                <Button
-                                    Content="Amazonで開く"
-                                    Tag="{Binding URL}"
-                                    Padding="10,6"
-                                    Margin="8"
-                                    Cursor="Hand"
-                                    VerticalAlignment="Center" />
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
 
-                            </DataTemplate>
-                        </DataGridTemplateColumn.CellTemplate>
+                                    <Button
+                                        Content="Amazonで開く"
+                                        Tag="{Binding URL}"
+                                        Padding="10,6"
+                                        Margin="8"
+                                        Cursor="Hand"
+                                        VerticalAlignment="Center" />
 
-                    </DataGridTemplateColumn>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
 
-                </DataGrid.Columns>
+                        </DataGridTemplateColumn>
 
-            </DataGrid>
+                    </DataGrid.Columns>
 
-        </Border>
+                </DataGrid>
+
+            </Border>
+
+            <!-- Audible-only grid -->
+            <Border
+                x:Name="AudibleGridBorder"
+                Background="White"
+                CornerRadius="8"
+                Padding="1"
+                Visibility="Collapsed">
+
+                <DataGrid
+                    x:Name="AudibleGrid"
+                    AutoGenerateColumns="False"
+                    IsReadOnly="True"
+                    CanUserAddRows="False"
+                    CanUserDeleteRows="False"
+                    SelectionMode="Single"
+                    RowHeight="120"
+                    HeadersVisibility="Column"
+                    GridLinesVisibility="Horizontal"
+                    BorderThickness="0"
+                    AlternatingRowBackground="#FAFAFA">
+
+                    <DataGrid.Columns>
+
+                        <DataGridTemplateColumn
+                            Header="Image"
+                            Width="100">
+
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+
+                                    <Image
+                                        Source="{Binding ImageURL}"
+                                        Width="75"
+                                        Height="105"
+                                        Stretch="Uniform"
+                                        Margin="8" />
+
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+
+                        </DataGridTemplateColumn>
+
+                        <DataGridTextColumn
+                            Header="Title"
+                            Binding="{Binding Title}"
+                            Width="*" />
+
+                        <DataGridTextColumn
+                            Header="Author"
+                            Binding="{Binding Author}"
+                            Width="160" />
+
+                        <DataGridTextColumn
+                            Header="Narrator"
+                            Binding="{Binding Narrator}"
+                            Width="160" />
+
+                        <DataGridTextColumn
+                            Header="Publisher"
+                            Binding="{Binding Publisher}"
+                            Width="190" />
+
+                        <DataGridTextColumn
+                            Header="Format"
+                            Binding="{Binding Format}"
+                            Width="100" />
+
+                        <DataGridTextColumn
+                            Header="Release Date"
+                            Binding="{Binding ReleaseDate}"
+                            Width="150" />
+
+                        <DataGridTextColumn
+                            Header="ASIN"
+                            Binding="{Binding ASIN}"
+                            Width="120" />
+
+                        <DataGridTemplateColumn
+                            Header="Amazon"
+                            Width="140">
+
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+
+                                    <Button
+                                        Content="Amazonで開く"
+                                        Tag="{Binding URL}"
+                                        Padding="10,6"
+                                        Margin="8"
+                                        Cursor="Hand"
+                                        VerticalAlignment="Center" />
+
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+
+                        </DataGridTemplateColumn>
+
+                    </DataGrid.Columns>
+
+                </DataGrid>
+
+            </Border>
+
+        </Grid>
 
     </Grid>
 

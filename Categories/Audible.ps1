@@ -14,7 +14,9 @@ function Search-Audible {
     $resources = @(
         "itemInfo.title",
         "itemInfo.byLineInfo",
+        "itemInfo.classifications",
         "itemInfo.contentInfo",
+        "itemInfo.technicalInfo",
         "images.primary.medium"
     )
 
@@ -34,19 +36,59 @@ function Search-Audible {
 
     foreach ($item in $response.searchResult.items) {
 
+        $productGroup = ""
+
+        if ($item.itemInfo.classifications.productGroup) {
+
+            $productGroup =
+                $item.itemInfo.classifications.productGroup.displayValue
+        }
+
+        if ($productGroup -ne "Audible") {
+            continue
+        }
+
         $authors = @()
+        $narrators = @()
+        $publishers = @()
 
         if ($item.itemInfo.byLineInfo.contributors) {
 
             foreach ($contributor in $item.itemInfo.byLineInfo.contributors) {
 
-                if ($contributor.roleType -eq "author") {
-                    $authors += $contributor.name
+                switch ($contributor.roleType) {
+
+                    "author" {
+                        $authors += $contributor.name
+                    }
+
+                    "narrator" {
+                        $narrators += $contributor.name
+                    }
+
+                    "publisher" {
+                        $publishers += $contributor.name
+                    }
                 }
             }
         }
 
-        $creatorText = $authors -join ", "
+        $authorText =
+            $authors -join ", "
+
+        $narratorText =
+            $narrators -join ", "
+
+        $publisherText =
+            $publishers -join ", "
+
+        $formatText = ""
+
+        if ($item.itemInfo.technicalInfo.formats.displayValues) {
+
+            $formatText =
+                $item.itemInfo.technicalInfo.formats.displayValues -join ", "
+        }
 
         $releaseDate = ""
 
@@ -66,7 +108,10 @@ function Search-Audible {
 
         $result = [PSCustomObject]@{
             Title       = $item.itemInfo.title.displayValue
-            Creator     = $creatorText
+            Author      = $authorText
+            Narrator    = $narratorText
+            Publisher   = $publisherText
+            Format      = $formatText
             ReleaseDate = $releaseDate
             ASIN        = $item.asin
             ImageURL    = $imageUrl

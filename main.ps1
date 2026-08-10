@@ -3,6 +3,7 @@ Add-Type -AssemblyName PresentationFramework
 # ==========================================
 # Load modules
 # ==========================================
+
 . "$PSScriptRoot\Core\Get-AmazonAccessToken.ps1"
 . "$PSScriptRoot\Core\Invoke-AmazonSearch.ps1"
 
@@ -15,7 +16,9 @@ Add-Type -AssemblyName PresentationFramework
 # ==========================================
 # Load config
 # ==========================================
-$configPath = Join-Path $PSScriptRoot "config.json"
+
+$configPath =
+    Join-Path $PSScriptRoot "config.json"
 
 if (-not (Test-Path $configPath)) {
 
@@ -27,13 +30,15 @@ if (-not (Test-Path $configPath)) {
     exit
 }
 
-$config = Get-Content $configPath -Raw |
+$config =
+    Get-Content $configPath -Raw |
     ConvertFrom-Json
 
 
 # ==========================================
 # Authentication
 # ==========================================
+
 try {
 
     $accessToken =
@@ -54,6 +59,7 @@ catch {
 # ==========================================
 # Load XAML
 # ==========================================
+
 $xamlPath =
     Join-Path $PSScriptRoot "MainWindow.xaml"
 
@@ -67,7 +73,8 @@ if (-not (Test-Path $xamlPath)) {
     exit
 }
 
-$xaml = Get-Content $xamlPath -Raw
+$xaml =
+    Get-Content $xamlPath -Raw
 
 $reader =
     New-Object System.Xml.XmlNodeReader ([xml]$xaml)
@@ -79,6 +86,7 @@ $window =
 # ==========================================
 # Get controls
 # ==========================================
+
 $searchBox =
     $window.FindName("SearchBox")
 
@@ -87,6 +95,15 @@ $searchButton =
 
 $resultGrid =
     $window.FindName("ResultGrid")
+
+$audibleGrid =
+    $window.FindName("AudibleGrid")
+
+$resultGridBorder =
+    $window.FindName("ResultGridBorder")
+
+$audibleGridBorder =
+    $window.FindName("AudibleGridBorder")
 
 $statusText =
     $window.FindName("StatusText")
@@ -98,6 +115,7 @@ $categoryBox =
 # ==========================================
 # Open Amazon product page
 # ==========================================
+
 $resultGrid.AddHandler(
     [System.Windows.Controls.Button]::ClickEvent,
     [System.Windows.RoutedEventHandler]{
@@ -127,14 +145,73 @@ $resultGrid.AddHandler(
 )
 
 
+$audibleGrid.AddHandler(
+    [System.Windows.Controls.Button]::ClickEvent,
+    [System.Windows.RoutedEventHandler]{
+
+        param($sender, $e)
+
+        $button = $e.OriginalSource
+
+        while (
+            $button -and
+            -not ($button -is [System.Windows.Controls.Button])
+        ) {
+
+            $button =
+                [System.Windows.Media.VisualTreeHelper]::GetParent(
+                    $button
+                )
+        }
+
+        if ($button -and $button.Tag) {
+
+            Start-Process $button.Tag.ToString()
+
+            $e.Handled = $true
+        }
+    }
+)
+
+
+# ==========================================
+# Grid display
+# ==========================================
+
+function Set-GridVisibility {
+
+    param(
+        [Parameter(Mandatory)]
+        [string]$Category
+    )
+
+    if ($Category -eq "Audible") {
+
+        $resultGridBorder.Visibility =
+            [System.Windows.Visibility]::Collapsed
+
+        $audibleGridBorder.Visibility =
+            [System.Windows.Visibility]::Visible
+    }
+    else {
+
+        $resultGridBorder.Visibility =
+            [System.Windows.Visibility]::Visible
+
+        $audibleGridBorder.Visibility =
+            [System.Windows.Visibility]::Collapsed
+    }
+}
+
+
 # ==========================================
 # Search
 # ==========================================
+
 function Start-AmazonSearch {
 
     $keyword =
         $searchBox.Text.Trim()
-
 
     if ([string]::IsNullOrWhiteSpace($keyword)) {
 
@@ -146,13 +223,13 @@ function Start-AmazonSearch {
         return
     }
 
-
     $selectedCategory =
         $categoryBox.SelectedItem.Content.ToString()
 
+    Set-GridVisibility -Category $selectedCategory
 
-    $statusText.Text = "Searching..."
-
+    $statusText.Text =
+        "Searching..."
 
     try {
 
@@ -165,8 +242,13 @@ function Start-AmazonSearch {
                         -Keyword $keyword `
                         -Config $config `
                         -AccessToken $accessToken
-            }
 
+                $resultGrid.ItemsSource =
+                    $results
+
+                $audibleGrid.ItemsSource =
+                    $null
+            }
 
             "Kindle" {
 
@@ -175,8 +257,13 @@ function Start-AmazonSearch {
                         -Keyword $keyword `
                         -Config $config `
                         -AccessToken $accessToken
-            }
 
+                $resultGrid.ItemsSource =
+                    $results
+
+                $audibleGrid.ItemsSource =
+                    $null
+            }
 
             "Movies" {
 
@@ -185,8 +272,13 @@ function Start-AmazonSearch {
                         -Keyword $keyword `
                         -Config $config `
                         -AccessToken $accessToken
-            }
 
+                $resultGrid.ItemsSource =
+                    $results
+
+                $audibleGrid.ItemsSource =
+                    $null
+            }
 
             "Audible" {
 
@@ -195,8 +287,13 @@ function Start-AmazonSearch {
                         -Keyword $keyword `
                         -Config $config `
                         -AccessToken $accessToken
-            }
 
+                $audibleGrid.ItemsSource =
+                    $results
+
+                $resultGrid.ItemsSource =
+                    $null
+            }
 
             default {
 
@@ -204,18 +301,14 @@ function Start-AmazonSearch {
             }
         }
 
-
-        $resultGrid.ItemsSource =
-            $results
-
-
         $statusText.Text =
             "$selectedCategory / $($results.Count) results"
 
     }
     catch {
 
-        $statusText.Text = "Error"
+        $statusText.Text =
+            "Error"
 
         [System.Windows.MessageBox]::Show(
             $_.Exception.Message,
@@ -226,8 +319,25 @@ function Start-AmazonSearch {
 
 
 # ==========================================
+# Category change
+# ==========================================
+
+$categoryBox.Add_SelectionChanged({
+
+    if ($categoryBox.SelectedItem) {
+
+        $selectedCategory =
+            $categoryBox.SelectedItem.Content.ToString()
+
+        Set-GridVisibility -Category $selectedCategory
+    }
+})
+
+
+# ==========================================
 # Search button
 # ==========================================
+
 $searchButton.Add_Click({
 
     Start-AmazonSearch
@@ -238,17 +348,26 @@ $searchButton.Add_Click({
 # ==========================================
 # Enter key
 # ==========================================
+
 $searchBox.Add_KeyDown({
 
     if ($_.Key -eq "Return") {
 
         Start-AmazonSearch
-
     }
 })
 
 
 # ==========================================
+# Initial display
+# ==========================================
+
+Set-GridVisibility -Category "Books"
+
+
+# ==========================================
 # Show window
 # ==========================================
-$window.ShowDialog() | Out-Null
+
+$window.ShowDialog() |
+    Out-Null
