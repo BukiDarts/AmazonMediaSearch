@@ -12,20 +12,23 @@ function Search-Audible {
     )
 
     $resources = @(
-        "itemInfo.title"
-        "itemInfo.byLineInfo"
-        "itemInfo.contentInfo"
+        "itemInfo.title",
+        "itemInfo.byLineInfo",
+        "itemInfo.contentInfo",
         "images.primary.medium"
     )
 
     $searchKeyword = "$Keyword Audible"
 
-    $response = Invoke-AmazonSearch `
-        -Keyword $searchKeyword `
-        -SearchIndex "All" `
-        -Resources $resources `
-        -Config $Config `
-        -AccessToken $AccessToken
+    $searchParams = @{
+        Keyword     = $searchKeyword
+        SearchIndex = "All"
+        Resources   = $resources
+        Config      = $Config
+        AccessToken = $AccessToken
+    }
+
+    $response = Invoke-AmazonSearch @searchParams
 
     $results = @()
 
@@ -35,10 +38,7 @@ function Search-Audible {
 
         if ($item.itemInfo.byLineInfo.contributors) {
 
-            foreach (
-                $contributor in
-                $item.itemInfo.byLineInfo.contributors
-            ) {
+            foreach ($contributor in $item.itemInfo.byLineInfo.contributors) {
 
                 if ($contributor.roleType -eq "author") {
                     $authors += $contributor.name
@@ -48,24 +48,23 @@ function Search-Audible {
 
         $creatorText = $authors -join ", "
 
-
         $releaseDate = ""
 
         if ($item.itemInfo.contentInfo.publicationDate) {
+
             $releaseDate =
                 $item.itemInfo.contentInfo.publicationDate.displayValue
         }
 
-
         $imageUrl = ""
 
         if ($item.images.primary.medium.url) {
+
             $imageUrl =
                 $item.images.primary.medium.url
         }
 
-
-        $results += [PSCustomObject]@{
+        $result = [PSCustomObject]@{
             Title       = $item.itemInfo.title.displayValue
             Creator     = $creatorText
             ReleaseDate = $releaseDate
@@ -73,6 +72,8 @@ function Search-Audible {
             ImageURL    = $imageUrl
             URL         = $item.detailPageURL
         }
+
+        $results += $result
     }
 
     return $results
