@@ -174,7 +174,7 @@ function Search-AmazonItem {
     try {
 
         $webResponse =
-            Invoke-WebRequest @searchParameters
+            Invoke-WebRequest @searchParameters -UseBasicParsing
 
         $responseBytes =
             $webResponse.RawContentStream.ToArray()
