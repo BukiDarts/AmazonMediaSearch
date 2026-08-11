@@ -1,4 +1,4 @@
-function Search-Movies {
+﻿function Search-Movies {
 
     param(
         [Parameter(Mandatory)]
@@ -8,79 +8,300 @@ function Search-Movies {
         $Config,
 
         [Parameter(Mandatory)]
-        [string]$AccessToken
+        [string]$AccessToken,
+
+        [string]$SortBy = "Relevance"
     )
 
     $resources = @(
         "itemInfo.title",
         "itemInfo.byLineInfo",
+        "itemInfo.classifications",
         "itemInfo.contentInfo",
-        "images.primary.medium"
+        "images.primary.medium",
+        "offersV2.listings.price",
+        "offersV2.listings.availability",
+        "offersV2.listings.isBuyBoxWinner"
     )
 
-    $searchParams = @{
-        Keyword     = $Keyword
-        SearchIndex = "MoviesAndTV"
-        Resources   = $resources
-        Config      = $Config
-        AccessToken = $AccessToken
-    }
-
-    $response = Invoke-AmazonSearch @searchParams
-
     $results = @()
+    $foundAsins = @{}
+    $totalResultCount = 0
 
-    foreach ($item in $response.searchResult.items) {
 
-        $creators = @()
+    # Get up to 10 pages
+    for ($page = 1; $page -le 10; $page++) {
 
-        if ($item.itemInfo.byLineInfo.contributors) {
+        $searchParams = @{
+            Keyword     = $Keyword
+            SearchIndex = "MoviesAndTV"
+            Resources   = $resources
+            Config      = $Config
+            AccessToken = $AccessToken
+            ItemCount   = 10
+            ItemPage    = $page
+            SortBy      = $SortBy
+        }
 
-            foreach ($contributor in $item.itemInfo.byLineInfo.contributors) {
+        $response =
+            Invoke-AmazonSearch @searchParams
 
-                if ($contributor.roleType -eq "director") {
 
-                    $creators +=
-                        "Director: $($contributor.name)"
-                }
+        # Save total result count from the first response
+        if ($page -eq 1) {
 
-                elseif ($contributor.roleType -eq "actor") {
+            if (
+                $null -ne
+                $response.searchResult.totalResultCount
+            ) {
 
-                    $creators +=
-                        "Actor: $($contributor.name)"
-                }
+                $totalResultCount =
+                    [int]$response.searchResult.totalResultCount
             }
         }
 
-        $creatorText = $creators -join ", "
 
-        $releaseDate = ""
+        $pageItems =
+            @($response.searchResult.items)
 
-        if ($item.itemInfo.contentInfo.publicationDate) {
-
-            $releaseDate =
-                $item.itemInfo.contentInfo.publicationDate.displayValue
+        if ($pageItems.Count -eq 0) {
+            break
         }
 
-        $imageUrl = ""
 
-        if ($item.images.primary.medium.url) {
+        foreach ($item in $pageItems) {
 
-            $imageUrl =
-                $item.images.primary.medium.url
+            # Duplicate check
+            if ($foundAsins.ContainsKey($item.asin)) {
+                continue
+            }
+
+            $foundAsins[$item.asin] = $true
+
+
+            # Contributors
+            $directors = @()
+            $actors = @()
+            $publishers = @()
+
+            if ($item.itemInfo.byLineInfo.contributors) {
+
+                foreach (
+                    $contributor in
+                    $item.itemInfo.byLineInfo.contributors
+                ) {
+
+                    switch ($contributor.roleType) {
+
+                        "director" {
+
+                            $directors +=
+                                $contributor.name
+                        }
+
+                        "actor" {
+
+                            $actors +=
+                                $contributor.name
+                        }
+
+                        "publisher" {
+
+                            $publishers +=
+                                $contributor.name
+                        }
+                    }
+                }
+            }
+
+
+            $directorText =
+                $directors -join ", "
+
+            $actorText =
+                $actors -join ", "
+
+            $publisherText =
+                $publishers -join ", "
+
+
+            # Format / binding
+            $formatText = ""
+
+            if (
+                $item.itemInfo.classifications.binding
+            ) {
+
+                $formatText =
+                    $item.itemInfo.classifications.binding.displayValue
+            }
+
+
+            # Release date
+            $releaseDate = ""
+
+            if (
+                $item.itemInfo.contentInfo.publicationDate
+            ) {
+
+                $rawReleaseDate =
+                    $item.itemInfo.contentInfo.publicationDate.displayValue
+
+                try {
+
+                    $releaseDate =
+                        ([datetime]$rawReleaseDate).ToString(
+                            "yyyy/MM/dd"
+                        )
+
+                }
+                catch {
+
+                    $releaseDate =
+                        $rawReleaseDate
+                }
+            }
+
+
+            # Price and availability
+            $priceText = ""
+            $priceStatus = ""
+            $availabilityType = ""
+
+            if ($item.offersV2.listings) {
+
+                $buyBoxListing =
+                    $item.offersV2.listings |
+                    Where-Object {
+                        $_.isBuyBoxWinner -eq $true
+                    } |
+                    Select-Object -First 1
+
+
+                if (-not $buyBoxListing) {
+
+                    $buyBoxListing =
+                        $item.offersV2.listings |
+                        Select-Object -First 1
+                }
+
+
+                if ($buyBoxListing) {
+
+                    $currentPrice =
+                        $buyBoxListing.price.money.displayAmount
+
+                    $availabilityType =
+                        $buyBoxListing.availability.type
+
+
+                    if (
+                        $availabilityType -eq "PREORDER"
+                    ) {
+
+                        $priceStatus =
+                            "予約"
+
+                        if ($currentPrice) {
+
+                            $priceText =
+                                $currentPrice
+                        }
+                    }
+                    else {
+
+                        if ($currentPrice) {
+
+                            $priceStatus =
+                                "価格"
+
+                            $priceText =
+                                $currentPrice
+                        }
+                    }
+                }
+            }
+
+
+            # Image URL
+            $imageUrl = ""
+
+            if ($item.images.primary.medium.url) {
+
+                $imageUrl =
+                    $item.images.primary.medium.url
+            }
+
+
+            # Result
+            $result = [PSCustomObject]@{
+
+                Title =
+                    $item.itemInfo.title.displayValue
+
+                Director =
+                    $directorText
+
+                Actors =
+                    $actorText
+
+                Publisher =
+                    $publisherText
+
+                Format =
+                    $formatText
+
+                ReleaseDate =
+                    $releaseDate
+
+                PriceStatus =
+                    $priceStatus
+
+                Price =
+                    $priceText
+
+                AvailabilityType =
+                    $availabilityType
+
+                ASIN =
+                    $item.asin
+
+                ImageURL =
+                    $imageUrl
+
+                URL =
+                    $item.detailPageURL
+            }
+
+            $results +=
+                $result
         }
 
-        $result = [PSCustomObject]@{
-            Title       = $item.itemInfo.title.displayValue
-            Creator     = $creatorText
-            ReleaseDate = $releaseDate
-            ASIN        = $item.asin
-            ImageURL    = $imageUrl
-            URL         = $item.detailPageURL
+
+        if ($pageItems.Count -lt 10) {
+            break
         }
 
-        $results += $result
+
+        # Avoid sending page requests too quickly
+        Start-Sleep -Milliseconds 1100
     }
 
-    return $results
+
+    # Fallback
+    if ($totalResultCount -le 0) {
+
+        $totalResultCount =
+            $results.Count
+    }
+
+
+    return [PSCustomObject]@{
+
+        Items =
+            @($results)
+
+        TotalResultCount =
+            $totalResultCount
+    }
 }
