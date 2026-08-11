@@ -14,6 +14,13 @@ Add-Type -AssemblyName PresentationFramework
 
 
 # ==========================================
+# Runtime data
+# ==========================================
+
+$script:audibleAllResults = @()
+
+
+# ==========================================
 # Load config
 # ==========================================
 
@@ -114,6 +121,9 @@ $categoryBox =
 $sortBox =
     $window.FindName("SortBox")
 
+$filterBox =
+    $window.FindName("FilterBox")
+
 
 # ==========================================
 # Open Amazon product page
@@ -202,6 +212,9 @@ function Set-CategoryUI {
 
         $sortBox.Visibility =
             [System.Windows.Visibility]::Visible
+
+        $filterBox.Visibility =
+            [System.Windows.Visibility]::Visible
     }
     else {
 
@@ -213,6 +226,93 @@ function Set-CategoryUI {
 
         $sortBox.Visibility =
             [System.Windows.Visibility]::Collapsed
+
+        $filterBox.Visibility =
+            [System.Windows.Visibility]::Collapsed
+    }
+}
+
+
+# ==========================================
+# Audible filter
+# ==========================================
+
+function Apply-AudibleFilter {
+
+    $allResults =
+        @($script:audibleAllResults)
+
+    if (-not $filterBox.SelectedItem) {
+
+        $audibleGrid.ItemsSource =
+            $allResults
+
+        return
+    }
+
+    $filter =
+        $filterBox.SelectedItem.Tag.ToString()
+
+
+    switch ($filter) {
+
+        "Released" {
+
+            $filteredResults =
+                @(
+                    $allResults |
+                    Where-Object {
+                        $_.AvailabilityType -eq "IN_STOCK"
+                    }
+                )
+        }
+
+
+        "Preorder" {
+
+            $filteredResults =
+                @(
+                    $allResults |
+                    Where-Object {
+                        $_.AvailabilityType -eq "PREORDER"
+                    }
+                )
+        }
+
+
+        "Included" {
+
+            $filteredResults =
+                @(
+                    $allResults |
+                    Where-Object {
+                        $_.IsAdditionalChargeFree -eq $true
+                    }
+                )
+        }
+
+
+        default {
+
+            $filteredResults =
+                $allResults
+        }
+    }
+
+
+    $audibleGrid.ItemsSource =
+        $filteredResults
+
+
+    if ($filter -eq "All") {
+
+        $statusText.Text =
+            "Audible / $($filteredResults.Count) results"
+    }
+    else {
+
+        $statusText.Text =
+            "Audible / $($filteredResults.Count) of $($allResults.Count) results"
     }
 }
 
@@ -269,6 +369,12 @@ function Start-AmazonSearch {
 
                 $audibleGrid.ItemsSource =
                     $null
+
+                $script:audibleAllResults =
+                    @()
+
+                $statusText.Text =
+                    "Books / $($results.Count) results"
             }
 
 
@@ -288,6 +394,12 @@ function Start-AmazonSearch {
 
                 $audibleGrid.ItemsSource =
                     $null
+
+                $script:audibleAllResults =
+                    @()
+
+                $statusText.Text =
+                    "Kindle / $($results.Count) results"
             }
 
 
@@ -307,6 +419,12 @@ function Start-AmazonSearch {
 
                 $audibleGrid.ItemsSource =
                     $null
+
+                $script:audibleAllResults =
+                    @()
+
+                $statusText.Text =
+                    "Movies / $($results.Count) results"
             }
 
 
@@ -325,11 +443,13 @@ function Start-AmazonSearch {
                 $results =
                     Search-Audible @searchParams
 
-                $audibleGrid.ItemsSource =
-                    $results
+                $script:audibleAllResults =
+                    @($results)
 
                 $resultGrid.ItemsSource =
                     $null
+
+                Apply-AudibleFilter
             }
 
 
@@ -337,13 +457,11 @@ function Start-AmazonSearch {
 
                 $results =
                     @()
+
+                $statusText.Text =
+                    "0 results"
             }
         }
-
-
-        $statusText.Text =
-            "$selectedCategory / $($results.Count) results"
-
     }
     catch {
 
@@ -371,6 +489,22 @@ $categoryBox.Add_SelectionChanged({
 
         Set-CategoryUI `
             -Category $selectedCategory
+    }
+})
+
+
+# ==========================================
+# Filter change
+# ==========================================
+
+$filterBox.Add_SelectionChanged({
+
+    if (
+        $categoryBox.SelectedItem -and
+        $categoryBox.SelectedItem.Content.ToString() -eq "Audible"
+    ) {
+
+        Apply-AudibleFilter
     }
 })
 

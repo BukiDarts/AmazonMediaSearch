@@ -170,9 +170,11 @@
             }
 
 
-            # Price
+            # Price and availability
             $priceText = ""
             $priceStatus = ""
+            $availabilityType = ""
+            $isAdditionalChargeFree = $false
 
             if ($item.offersV2.listings) {
 
@@ -202,7 +204,10 @@
                         $buyBoxListing.availability.type
 
 
-                    if ($availabilityType -eq "PREORDER") {
+                    # Preorder
+                    if (
+                        $availabilityType -eq "PREORDER"
+                    ) {
 
                         $priceStatus =
                             "予約"
@@ -214,7 +219,14 @@
                         }
                     }
 
-                    elseif ($currentAmount -eq 0) {
+
+                    # Zero-price offer
+                    elseif (
+                        $currentAmount -eq 0
+                    ) {
+
+                        $isAdditionalChargeFree =
+                            $true
 
                         $priceStatus =
                             "追加料金なし"
@@ -256,6 +268,8 @@
                         }
                     }
 
+
+                    # Normal price
                     else {
 
                         if ($currentPrice) {
@@ -309,6 +323,12 @@
 
                 Price =
                     $priceText
+
+                AvailabilityType =
+                    $availabilityType
+
+                IsAdditionalChargeFree =
+                    $isAdditionalChargeFree
 
                 ASIN =
                     $item.asin

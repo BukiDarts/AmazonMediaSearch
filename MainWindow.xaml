@@ -50,7 +50,8 @@
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="150"/>
                     <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="160"/>
+                    <ColumnDefinition Width="150"/>
                     <ColumnDefinition Width="120"/>
                 </Grid.ColumnDefinitions>
 
@@ -61,7 +62,8 @@
                     Height="38"
                     Margin="0,0,10,0"
                     FontSize="14"
-                    SelectedIndex="0">
+                    SelectedIndex="0"
+                    VerticalContentAlignment="Center">
 
                     <ComboBoxItem Content="Books"/>
                     <ComboBoxItem Content="Kindle"/>
@@ -84,12 +86,12 @@
                 <ComboBox
                     x:Name="SortBox"
                     Grid.Column="2"
-                    Width="160"
                     Height="38"
                     Margin="0,0,10,0"
                     FontSize="13"
                     SelectedIndex="0"
-                    Visibility="Collapsed">
+                    Visibility="Collapsed"
+                    VerticalContentAlignment="Center">
 
                     <ComboBoxItem
                         Content="関連度順"
@@ -110,9 +112,38 @@
                 </ComboBox>
 
 
+                <ComboBox
+                    x:Name="FilterBox"
+                    Grid.Column="3"
+                    Height="38"
+                    Margin="0,0,10,0"
+                    FontSize="13"
+                    SelectedIndex="0"
+                    Visibility="Collapsed"
+                    VerticalContentAlignment="Center">
+
+                    <ComboBoxItem
+                        Content="すべて"
+                        Tag="All" />
+
+                    <ComboBoxItem
+                        Content="発売済み"
+                        Tag="Released" />
+
+                    <ComboBoxItem
+                        Content="予約のみ"
+                        Tag="Preorder" />
+
+                    <ComboBoxItem
+                        Content="追加料金なし"
+                        Tag="Included" />
+
+                </ComboBox>
+
+
                 <Button
                     x:Name="SearchButton"
-                    Grid.Column="3"
+                    Grid.Column="4"
                     Height="38"
                     Content="Search"
                     FontSize="14"
