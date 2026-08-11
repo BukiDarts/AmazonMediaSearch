@@ -1131,7 +1131,7 @@ function Invoke-MangaWindowSearch {
 
 
 # ==========================================
-# Keyword discovery action
+# Keyword search action
 # ==========================================
 
 function Invoke-MangaDiscoveryWindowSearch {
@@ -1249,6 +1249,9 @@ function Invoke-MangaDiscoveryWindowSearch {
                     Rank =
                         $item.Rank
 
+                    SearchKeyword =
+                        $result.UserKeyword
+
                     SeriesTitle =
                         $item.SeriesTitle
 
@@ -1304,7 +1307,7 @@ function Invoke-MangaDiscoveryWindowSearch {
 
         [System.Windows.MessageBox]::Show(
             $_.Exception.Message,
-            "Manga Discovery Error"
+            "Manga Search Error"
         )
     }
     finally {
@@ -1331,7 +1334,7 @@ function Invoke-MangaDiscoveryWindowSearch {
 
 
 # ==========================================
-# Open selected discovery result
+# Open selected search result
 # ==========================================
 
 function Open-MangaDiscoveryDetail {
@@ -1437,7 +1440,7 @@ $volumesGrid.Add_MouseDoubleClick({
 
 
 # ==========================================
-# Keyword discovery controls
+# Keyword search controls
 # ==========================================
 
 $discoverySearchButton.Add_Click({

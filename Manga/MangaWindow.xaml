@@ -299,9 +299,9 @@
 
             </TabItem>
 
-            <!-- Keyword discovery -->
+            <!-- Keyword search -->
             <TabItem
-                Header="キーワード発見">
+                Header="キーワード検索">
 
                 <Grid Margin="10">
 
@@ -386,6 +386,11 @@
                                 Header="#"
                                 Binding="{Binding Rank}"
                                 Width="45"/>
+
+                            <DataGridTextColumn
+                                Header="検索キーワード"
+                                Binding="{Binding SearchKeyword}"
+                                Width="110"/>
 
                             <DataGridTextColumn
                                 Header="作品名"
