@@ -2,294 +2,504 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     Title="漫画シリーズ情報"
-    Width="1050"
-    Height="720"
-    MinWidth="850"
-    MinHeight="580"
+    Width="1100"
+    Height="760"
+    MinWidth="900"
+    MinHeight="620"
     WindowStartupLocation="CenterScreen">
 
     <Grid Margin="16">
 
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
-            <RowDefinition Height="Auto"/>
-        </Grid.RowDefinitions>
+        <TabControl
+            x:Name="MangaTabs">
 
-        <!-- Search area -->
-        <Border
-            Grid.Row="0"
-            Padding="12"
-            BorderBrush="#D0D0D0"
-            BorderThickness="1"
-            CornerRadius="6">
+            <!-- Detail search -->
+            <TabItem
+                Header="ASIN / URL検索">
 
-            <Grid>
-
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="Auto"/>
-                </Grid.ColumnDefinitions>
-
-                <TextBlock
-                    Grid.Column="0"
-                    Margin="0,0,10,0"
-                    VerticalAlignment="Center"
-                    Text="ASIN / Amazon URL"/>
-
-                <TextBox
-                    x:Name="AsinBox"
-                    Grid.Column="1"
-                    Height="32"
-                    Padding="6,4"
-                    VerticalContentAlignment="Center"/>
-
-                <Button
-                    x:Name="SearchButton"
-                    Grid.Column="2"
-                    Width="90"
-                    Height="32"
-                    Margin="10,0,0,0"
-                    Content="検索"/>
-
-                <Button
-                    x:Name="RefreshButton"
-                    Grid.Column="3"
-                    Width="90"
-                    Height="32"
-                    Margin="8,0,0,0"
-                    Content="再取得"/>
-
-            </Grid>
-
-        </Border>
-
-        <!-- Series summary -->
-        <Border
-            Grid.Row="1"
-            Margin="0,12,0,0"
-            Padding="14"
-            BorderBrush="#D0D0D0"
-            BorderThickness="1"
-            CornerRadius="6">
-
-            <Grid>
-
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="150"/>
-                    <ColumnDefinition Width="*"/>
-                </Grid.ColumnDefinitions>
-
-                <Border
-                    Grid.Column="0"
-                    Width="130"
-                    Height="180"
-                    HorizontalAlignment="Left"
-                    VerticalAlignment="Top"
-                    BorderBrush="#DDDDDD"
-                    BorderThickness="1"
-                    Background="#F5F5F5">
-
-                    <Image
-                        x:Name="CoverImage"
-                        Stretch="Uniform"/>
-
-                </Border>
-
-                <Grid
-                    Grid.Column="1"
-                    Margin="18,0,0,0">
+                <Grid Margin="10">
 
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
                         <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
 
-                    <TextBlock
-                        x:Name="SeriesTitleText"
+                    <!-- Search area -->
+                    <Border
                         Grid.Row="0"
-                        FontSize="24"
-                        FontWeight="Bold"
-                        TextWrapping="Wrap"
-                        Text="作品名"/>
+                        Padding="12"
+                        BorderBrush="#D0D0D0"
+                        BorderThickness="1"
+                        CornerRadius="6">
 
-                    <TextBlock
-                        x:Name="VolumeSummaryText"
+                        <Grid>
+
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+
+                            <TextBlock
+                                Grid.Column="0"
+                                Margin="0,0,10,0"
+                                VerticalAlignment="Center"
+                                Text="ASIN / Amazon URL"/>
+
+                            <TextBox
+                                x:Name="AsinBox"
+                                Grid.Column="1"
+                                Height="32"
+                                Padding="6,4"
+                                VerticalContentAlignment="Center"/>
+
+                            <Button
+                                x:Name="SearchButton"
+                                Grid.Column="2"
+                                Width="90"
+                                Height="32"
+                                Margin="10,0,0,0"
+                                Content="検索"/>
+
+                            <Button
+                                x:Name="RefreshButton"
+                                Grid.Column="3"
+                                Width="90"
+                                Height="32"
+                                Margin="8,0,0,0"
+                                Content="再取得"/>
+
+                        </Grid>
+
+                    </Border>
+
+                    <!-- Series summary -->
+                    <Border
                         Grid.Row="1"
                         Margin="0,12,0,0"
-                        FontSize="18"
-                        FontWeight="SemiBold"
-                        Text="巻数：-"/>
+                        Padding="14"
+                        BorderBrush="#D0D0D0"
+                        BorderThickness="1"
+                        CornerRadius="6">
+
+                        <Grid>
+
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="150"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+
+                            <Border
+                                Grid.Column="0"
+                                Width="130"
+                                Height="180"
+                                HorizontalAlignment="Left"
+                                VerticalAlignment="Top"
+                                BorderBrush="#DDDDDD"
+                                BorderThickness="1"
+                                Background="#F5F5F5">
+
+                                <Image
+                                    x:Name="CoverImage"
+                                    Stretch="Uniform"/>
+
+                            </Border>
+
+                            <Grid
+                                Grid.Column="1"
+                                Margin="18,0,0,0">
+
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+
+                                <TextBlock
+                                    x:Name="SeriesTitleText"
+                                    Grid.Row="0"
+                                    FontSize="24"
+                                    FontWeight="Bold"
+                                    TextWrapping="Wrap"
+                                    Text="作品名"/>
+
+                                <TextBlock
+                                    x:Name="VolumeSummaryText"
+                                    Grid.Row="1"
+                                    Margin="0,12,0,0"
+                                    FontSize="18"
+                                    FontWeight="SemiBold"
+                                    Text="巻数：-"/>
+
+                                <TextBlock
+                                    x:Name="KUSummaryText"
+                                    Grid.Row="2"
+                                    Margin="0,8,0,0"
+                                    FontSize="18"
+                                    FontWeight="SemiBold"
+                                    Text="Kindle Unlimited：-"/>
+
+                                <TextBlock
+                                    x:Name="KUCountText"
+                                    Grid.Row="3"
+                                    Margin="0,6,0,0"
+                                    FontSize="14"
+                                    Foreground="#555555"
+                                    Text=""/>
+
+                                <TextBlock
+                                    x:Name="LimitedFreeSummaryText"
+                                    Grid.Row="4"
+                                    Margin="0,8,0,0"
+                                    FontSize="16"
+                                    FontWeight="SemiBold"
+                                    Foreground="#C62828"
+                                    Text="期間限定無料：-"/>
+
+                                <TextBlock
+                                    x:Name="UnknownSummaryText"
+                                    Grid.Row="5"
+                                    Margin="0,6,0,0"
+                                    Foreground="#777777"
+                                    Text=""/>
+
+                            </Grid>
+
+                        </Grid>
+
+                    </Border>
 
                     <TextBlock
-                        x:Name="KUSummaryText"
+                        x:Name="StatusText"
                         Grid.Row="2"
-                        Margin="0,8,0,0"
-                        FontSize="18"
-                        FontWeight="SemiBold"
-                        Text="Kindle Unlimited：-"/>
-
-                    <TextBlock
-                        x:Name="KUCountText"
-                        Grid.Row="3"
-                        Margin="0,6,0,0"
-                        FontSize="14"
+                        Margin="2,10,0,8"
                         Foreground="#555555"
-                        Text=""/>
+                        Text="ASINまたはAmazon商品URLを入力してください。"/>
+
+                    <DataGrid
+                        x:Name="VolumesGrid"
+                        Grid.Row="3"
+                        AutoGenerateColumns="False"
+                        CanUserAddRows="False"
+                        CanUserDeleteRows="False"
+                        IsReadOnly="True"
+                        SelectionMode="Single"
+                        HeadersVisibility="Column"
+                        GridLinesVisibility="Horizontal"
+                        RowHeight="34">
+
+                        <DataGrid.Columns>
+
+                            <DataGridTextColumn
+                                Header="巻"
+                                Binding="{Binding Volume}"
+                                Width="60"/>
+
+                            <DataGridTextColumn
+                                Header="KU"
+                                Binding="{Binding KUDisplay}"
+                                Width="90"/>
+
+                            <DataGridTextColumn
+                                Header="期間無料"
+                                Binding="{Binding LimitedFreeDisplay}"
+                                Width="90"/>
+
+                            <DataGridTemplateColumn
+                                Header="価格"
+                                Width="130">
+
+                                <DataGridTemplateColumn.CellTemplate>
+
+                                    <DataTemplate>
+
+                                        <Grid>
+
+                                            <TextBlock
+                                                x:Name="NormalPriceText"
+                                                VerticalAlignment="Center"
+                                                Text="{Binding Price}"/>
+
+                                            <StackPanel
+                                                x:Name="LimitedFreePricePanel"
+                                                Orientation="Horizontal"
+                                                VerticalAlignment="Center"
+                                                Visibility="Collapsed">
+
+                                                <TextBlock
+                                                    VerticalAlignment="Center"
+                                                    Foreground="#777777"
+                                                    Text="{Binding Price}"
+                                                    TextDecorations="Strikethrough"/>
+
+                                                <TextBlock
+                                                    Margin="8,0,0,0"
+                                                    VerticalAlignment="Center"
+                                                    FontWeight="Bold"
+                                                    Foreground="#D32F2F"
+                                                    Text="￥0"/>
+
+                                            </StackPanel>
+
+                                        </Grid>
+
+                                        <DataTemplate.Triggers>
+
+                                            <DataTrigger
+                                                Binding="{Binding IsLimitedFree}"
+                                                Value="True">
+
+                                                <Setter
+                                                    TargetName="NormalPriceText"
+                                                    Property="Visibility"
+                                                    Value="Collapsed"/>
+
+                                                <Setter
+                                                    TargetName="LimitedFreePricePanel"
+                                                    Property="Visibility"
+                                                    Value="Visible"/>
+
+                                            </DataTrigger>
+
+                                        </DataTemplate.Triggers>
+
+                                    </DataTemplate>
+
+                                </DataGridTemplateColumn.CellTemplate>
+
+                            </DataGridTemplateColumn>
+
+                            <DataGridTextColumn
+                                Header="タイトル"
+                                Binding="{Binding Title}"
+                                Width="*"/>
+
+                            <DataGridTextColumn
+                                Header="ASIN"
+                                Binding="{Binding ASIN}"
+                                Width="120"/>
+
+                        </DataGrid.Columns>
+
+                    </DataGrid>
 
                     <TextBlock
-                        x:Name="LimitedFreeSummaryText"
+                        x:Name="RequestSummaryText"
                         Grid.Row="4"
-                        Margin="0,8,0,0"
-                        FontSize="16"
-                        FontWeight="SemiBold"
-                        Foreground="#C62828"
-                        Text="期間限定無料：-"/>
-
-                    <TextBlock
-                        x:Name="UnknownSummaryText"
-                        Grid.Row="5"
-                        Margin="0,6,0,0"
+                        Margin="2,8,0,0"
                         Foreground="#777777"
                         Text=""/>
 
                 </Grid>
 
-            </Grid>
+            </TabItem>
 
-        </Border>
+            <!-- Recommended manga -->
+            <TabItem
+                Header="おすすめ漫画">
 
-        <!-- Status -->
-        <TextBlock
-            x:Name="StatusText"
-            Grid.Row="2"
-            Margin="2,10,0,8"
-            Foreground="#555555"
-            Text="ASINまたはAmazon商品URLを入力してください。"/>
+                <Grid Margin="10">
 
-        <!-- Volume list -->
-        <DataGrid
-            x:Name="VolumesGrid"
-            Grid.Row="3"
-            AutoGenerateColumns="False"
-            CanUserAddRows="False"
-            CanUserDeleteRows="False"
-            IsReadOnly="True"
-            SelectionMode="Single"
-            HeadersVisibility="Column"
-            GridLinesVisibility="Horizontal"
-            RowHeight="34">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
 
-            <DataGrid.Columns>
+                    <Border
+                        Grid.Row="0"
+                        Padding="12"
+                        BorderBrush="#D0D0D0"
+                        BorderThickness="1"
+                        CornerRadius="6">
 
-                <DataGridTextColumn
-                    Header="巻"
-                    Binding="{Binding Volume}"
-                    Width="60"/>
+                        <Grid>
 
-                <DataGridTextColumn
-                    Header="KU"
-                    Binding="{Binding KUDisplay}"
-                    Width="90"/>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
 
-                <DataGridTextColumn
-                    Header="期間無料"
-                    Binding="{Binding LimitedFreeDisplay}"
-                    Width="90"/>
-
-                <DataGridTemplateColumn
-                    Header="価格"
-                    Width="130">
-
-                    <DataGridTemplateColumn.CellTemplate>
-
-                        <DataTemplate>
-
-                            <Grid>
+                            <StackPanel
+                                Grid.Column="0"
+                                VerticalAlignment="Center">
 
                                 <TextBlock
-                                    x:Name="NormalPriceText"
-                                    VerticalAlignment="Center"
-                                    Text="{Binding Price}"/>
+                                    FontSize="18"
+                                    FontWeight="SemiBold"
+                                    Text="Amazonおすすめ漫画"/>
 
-                                <StackPanel
-                                    x:Name="LimitedFreePricePanel"
-                                    Orientation="Horizontal"
-                                    VerticalAlignment="Center"
-                                    Visibility="Collapsed">
+                                <TextBlock
+                                    Margin="0,4,0,0"
+                                    Foreground="#666666"
+                                    Text="Amazonの「厳選 人気のおすすめマンガ」から候補を取得します。"/>
 
-                                    <TextBlock
-                                        VerticalAlignment="Center"
-                                        Foreground="#777777"
-                                        Text="{Binding Price}"
-                                        TextDecorations="Strikethrough"/>
+                            </StackPanel>
 
-                                    <TextBlock
-                                        Margin="8,0,0,0"
-                                        VerticalAlignment="Center"
-                                        FontWeight="Bold"
-                                        Foreground="#D32F2F"
-                                        Text="￥0"/>
+                            <Button
+                                x:Name="RecommendedLoadButton"
+                                Grid.Column="1"
+                                Width="110"
+                                Height="34"
+                                Margin="12,0,0,0"
+                                Content="おすすめ取得"/>
 
-                                </StackPanel>
+                            <Button
+                                x:Name="RecommendedRefreshButton"
+                                Grid.Column="2"
+                                Width="90"
+                                Height="34"
+                                Margin="8,0,0,0"
+                                Content="再取得"/>
 
-                            </Grid>
+                            <Button
+                                x:Name="RecommendedDetailButton"
+                                Grid.Column="3"
+                                Width="110"
+                                Height="34"
+                                Margin="8,0,0,0"
+                                Content="詳細を見る"/>
 
-                            <DataTemplate.Triggers>
+                        </Grid>
 
-                                <DataTrigger
-                                    Binding="{Binding IsLimitedFree}"
-                                    Value="True">
+                    </Border>
 
-                                    <Setter
-                                        TargetName="NormalPriceText"
-                                        Property="Visibility"
-                                        Value="Collapsed"/>
+                    <TextBlock
+                        x:Name="RecommendedStatusText"
+                        Grid.Row="1"
+                        Margin="2,10,0,8"
+                        Foreground="#555555"
+                        Text="「おすすめ取得」を押すと一覧を表示します。"/>
 
-                                    <Setter
-                                        TargetName="LimitedFreePricePanel"
-                                        Property="Visibility"
-                                        Value="Visible"/>
+                    <DataGrid
+                        x:Name="RecommendedGrid"
+                        Grid.Row="2"
+                        AutoGenerateColumns="False"
+                        CanUserAddRows="False"
+                        CanUserDeleteRows="False"
+                        IsReadOnly="True"
+                        SelectionMode="Single"
+                        HeadersVisibility="Column"
+                        GridLinesVisibility="Horizontal"
+                        RowHeight="36">
 
-                                </DataTrigger>
+                        <DataGrid.Columns>
 
-                            </DataTemplate.Triggers>
+                            <DataGridTextColumn
+                                Header="#"
+                                Binding="{Binding Order}"
+                                Width="45"/>
 
-                        </DataTemplate>
+                            <DataGridTextColumn
+                                Header="作品名"
+                                Binding="{Binding Title}"
+                                Width="*"/>
 
-                    </DataGridTemplateColumn.CellTemplate>
+                            <DataGridTemplateColumn
+                                Header="価格"
+                                Width="125">
 
-                </DataGridTemplateColumn>
+                                <DataGridTemplateColumn.CellTemplate>
 
-                <DataGridTextColumn
-                    Header="タイトル"
-                    Binding="{Binding Title}"
-                    Width="*"/>
+                                    <DataTemplate>
 
-                <DataGridTextColumn
-                    Header="ASIN"
-                    Binding="{Binding ASIN}"
-                    Width="120"/>
+                                        <Grid>
 
-            </DataGrid.Columns>
+                                            <TextBlock
+                                                x:Name="RecommendedNormalPriceText"
+                                                VerticalAlignment="Center"
+                                                Text="{Binding Price}"/>
 
-        </DataGrid>
+                                            <StackPanel
+                                                x:Name="RecommendedFreePricePanel"
+                                                Orientation="Horizontal"
+                                                VerticalAlignment="Center"
+                                                Visibility="Collapsed">
 
-        <!-- Request summary -->
-        <TextBlock
-            x:Name="RequestSummaryText"
-            Grid.Row="4"
-            Margin="2,8,0,0"
-            Foreground="#777777"
-            Text=""/>
+                                                <TextBlock
+                                                    VerticalAlignment="Center"
+                                                    Foreground="#777777"
+                                                    Text="{Binding Price}"
+                                                    TextDecorations="Strikethrough"/>
+
+                                                <TextBlock
+                                                    Margin="6,0,0,0"
+                                                    VerticalAlignment="Center"
+                                                    FontWeight="Bold"
+                                                    Foreground="#D32F2F"
+                                                    Text="￥0"/>
+
+                                            </StackPanel>
+
+                                        </Grid>
+
+                                        <DataTemplate.Triggers>
+
+                                            <DataTrigger
+                                                Binding="{Binding IsLimitedFree}"
+                                                Value="True">
+
+                                                <Setter
+                                                    TargetName="RecommendedNormalPriceText"
+                                                    Property="Visibility"
+                                                    Value="Collapsed"/>
+
+                                                <Setter
+                                                    TargetName="RecommendedFreePricePanel"
+                                                    Property="Visibility"
+                                                    Value="Visible"/>
+
+                                            </DataTrigger>
+
+                                        </DataTemplate.Triggers>
+
+                                    </DataTemplate>
+
+                                </DataGridTemplateColumn.CellTemplate>
+
+                            </DataGridTemplateColumn>
+
+                            <DataGridTextColumn
+                                Header="KU"
+                                Binding="{Binding KUDisplay}"
+                                Width="80"/>
+
+                            <DataGridTextColumn
+                                Header="期間無料"
+                                Binding="{Binding LimitedFreeDisplay}"
+                                Width="90"/>
+
+                            <DataGridTextColumn
+                                Header="ASIN"
+                                Binding="{Binding ASIN}"
+                                Width="115"/>
+
+                        </DataGrid.Columns>
+
+                    </DataGrid>
+
+                    <TextBlock
+                        x:Name="RecommendedRequestSummaryText"
+                        Grid.Row="3"
+                        Margin="2,8,0,0"
+                        Foreground="#777777"
+                        Text=""/>
+
+                </Grid>
+
+            </TabItem>
+
+        </TabControl>
 
     </Grid>
 

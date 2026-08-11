@@ -30,6 +30,8 @@ $imageCacheDirectory =
         "Cache\Manga\Images"
 
 
+
+
 # ==========================================
 # Load functions
 # ==========================================
@@ -43,6 +45,8 @@ $imageCacheDirectory =
 . "$projectRoot\Manga\Services\Get-MangaSeries.ps1"
 
 . "$projectRoot\Manga\Services\Get-MangaSeriesCached.ps1"
+
+. "$projectRoot\Manga\Services\Get-RecommendedManga.ps1"
 
 
 # ==========================================
@@ -221,6 +225,48 @@ $requestSummaryText =
 $coverImage =
     $window.FindName(
         "CoverImage"
+    )
+
+
+$mangaTabs =
+    $window.FindName(
+        "MangaTabs"
+    )
+
+
+$recommendedLoadButton =
+    $window.FindName(
+        "RecommendedLoadButton"
+    )
+
+
+$recommendedRefreshButton =
+    $window.FindName(
+        "RecommendedRefreshButton"
+    )
+
+
+$recommendedDetailButton =
+    $window.FindName(
+        "RecommendedDetailButton"
+    )
+
+
+$recommendedGrid =
+    $window.FindName(
+        "RecommendedGrid"
+    )
+
+
+$recommendedStatusText =
+    $window.FindName(
+        "RecommendedStatusText"
+    )
+
+
+$recommendedRequestSummaryText =
+    $window.FindName(
+        "RecommendedRequestSummaryText"
     )
 
 
@@ -1118,6 +1164,252 @@ function Invoke-MangaWindowSearch {
 }
 
 
+
+
+# ==========================================
+# Recommended manga action
+# ==========================================
+
+function Invoke-RecommendedMangaWindowSearch {
+
+    param(
+        [switch]$ForceRefresh
+    )
+
+
+    $recommendedLoadButton.IsEnabled =
+        $false
+
+
+    $recommendedRefreshButton.IsEnabled =
+        $false
+
+
+    $recommendedDetailButton.IsEnabled =
+        $false
+
+
+    $recommendedGrid.ItemsSource =
+        $null
+
+
+    if ($ForceRefresh) {
+
+        $recommendedStatusText.Text =
+            "おすすめ漫画の最新情報を再取得しています..."
+    }
+    else {
+
+        $recommendedStatusText.Text =
+            "おすすめ漫画を取得しています..."
+    }
+
+
+    $recommendedRequestSummaryText.Text =
+        ""
+
+
+    $window.Cursor =
+        [System.Windows.Input.Cursors]::Wait
+
+
+    try {
+
+        if ($ForceRefresh) {
+
+            $result =
+                Get-RecommendedMangaCached `
+                    -Config $config `
+                    -CacheHours 6 `
+                    -ForceRefresh
+        }
+        else {
+
+            $result =
+                Get-RecommendedMangaCached `
+                    -Config $config `
+                    -CacheHours 6
+        }
+
+
+        $rows =
+            @()
+
+
+        foreach (
+            $item in @($result.Items)
+        ) {
+
+            $kuDisplay =
+                "対象外"
+
+
+            if (
+                $item.IsKindleUnlimited -eq
+                $true
+            ) {
+
+                $kuDisplay =
+                    "対象"
+            }
+            elseif (
+                $null -eq
+                $item.IsKindleUnlimited
+            ) {
+
+                $kuDisplay =
+                    "不明"
+            }
+
+
+            $limitedFreeDisplay =
+                "対象外"
+
+
+            if (
+                $item.IsLimitedFree -eq
+                $true
+            ) {
+
+                $limitedFreeDisplay =
+                    "対象"
+            }
+            elseif (
+                $null -eq
+                $item.IsLimitedFree
+            ) {
+
+                $limitedFreeDisplay =
+                    "不明"
+            }
+
+
+            $rows +=
+                [PSCustomObject]@{
+
+                    Order =
+                        $item.Order
+
+                    Title =
+                        $item.Title
+
+                    Price =
+                        $item.Price
+
+                    KUDisplay =
+                        $kuDisplay
+
+                    LimitedFreeDisplay =
+                        $limitedFreeDisplay
+
+                    IsLimitedFree =
+                        $item.IsLimitedFree
+
+                    ASIN =
+                        $item.ASIN
+
+                    DetailPageURL =
+                        $item.DetailPageURL
+                }
+        }
+
+
+        $recommendedGrid.ItemsSource =
+            @($rows)
+
+
+        if (
+            $result.CacheStatus -eq
+            "Hit"
+        ) {
+
+            $recommendedRequestSummaryText.Text =
+                "Cache: Hit / OAuth: 0 / Creators API: 0 / API通信なし"
+        }
+        else {
+
+            $recommendedRequestSummaryText.Text =
+                (
+                    "Cache: Miss / OAuth: {0} / SearchItems: {1} / Creators API: {2}" -f
+                    $result.CurrentOAuthRequests,
+                    $result.SearchItemsRequests,
+                    $result.CurrentCreatorsApiRequests
+                )
+        }
+
+
+        $recommendedStatusText.Text =
+            (
+                "Amazonおすすめ漫画を{0}作品取得しました。作品を選択して「詳細を見る」を押してください。" -f
+                $result.UniqueItemCount
+            )
+    }
+    catch {
+
+        $recommendedGrid.ItemsSource =
+            $null
+
+
+        $recommendedStatusText.Text =
+            "おすすめ漫画の取得に失敗しました。"
+
+
+        [System.Windows.MessageBox]::Show(
+            $_.Exception.Message,
+            "Recommended Manga Error"
+        )
+    }
+    finally {
+
+        $window.Cursor =
+            [System.Windows.Input.Cursors]::Arrow
+
+
+        $recommendedLoadButton.IsEnabled =
+            $true
+
+
+        $recommendedRefreshButton.IsEnabled =
+            $true
+
+
+        $recommendedDetailButton.IsEnabled =
+            $true
+    }
+}
+
+
+# ==========================================
+# Open selected recommendation in detail tab
+# ==========================================
+
+function Open-RecommendedMangaDetail {
+
+    $selectedItem =
+        $recommendedGrid.SelectedItem
+
+
+    if (-not $selectedItem) {
+
+        $recommendedStatusText.Text =
+            "詳細を見る作品を選択してください。"
+
+        return
+    }
+
+
+    $asinBox.Text =
+        [string]$selectedItem.ASIN
+
+
+    $mangaTabs.SelectedIndex =
+        0
+
+
+    Invoke-MangaWindowSearch
+}
+
+
 # ==========================================
 # Search button
 # ==========================================
@@ -1201,6 +1493,36 @@ $volumesGrid.Add_MouseDoubleClick({
             "Failed to open the product page."
         )
     }
+})
+
+
+
+# ==========================================
+# Recommended manga buttons
+# ==========================================
+
+$recommendedLoadButton.Add_Click({
+
+    Invoke-RecommendedMangaWindowSearch
+})
+
+
+$recommendedRefreshButton.Add_Click({
+
+    Invoke-RecommendedMangaWindowSearch `
+        -ForceRefresh
+})
+
+
+$recommendedDetailButton.Add_Click({
+
+    Open-RecommendedMangaDetail
+})
+
+
+$recommendedGrid.Add_MouseDoubleClick({
+
+    Open-RecommendedMangaDetail
 })
 
 

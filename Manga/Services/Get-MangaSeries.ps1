@@ -138,6 +138,18 @@ function Get-MangaSeriesTitle {
         )
     }
 
+    # Support titles where the volume number appears before
+    # one or more trailing labels, such as "Series 1 (Label)".
+    if (
+        $normalizedTitle -match
+        '^(.*?)\s+(?<!\d)\d+\s*(?:\([^()]*\)\s*)+$'
+    ) {
+        return (
+            ConvertTo-MangaNormalizedText `
+                -Text $Matches[1]
+        )
+    }
+
     if (
         $normalizedTitle -match
         '^(.*?)\s*\u7B2C\s*\d+\s*\u5DFB(?:\s*\([^()]*\))*\s*$'
