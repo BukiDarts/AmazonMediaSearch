@@ -30,8 +30,6 @@ $imageCacheDirectory =
         "Cache\Manga\Images"
 
 
-
-
 # ==========================================
 # Load functions
 # ==========================================
@@ -46,7 +44,7 @@ $imageCacheDirectory =
 
 . "$projectRoot\Manga\Services\Get-MangaSeriesCached.ps1"
 
-. "$projectRoot\Manga\Services\Get-RecommendedManga.ps1"
+. "$projectRoot\Manga\Services\Search-MangaKeywordDiscovery.ps1"
 
 
 # ==========================================
@@ -234,39 +232,39 @@ $mangaTabs =
     )
 
 
-$recommendedLoadButton =
+$discoveryKeywordBox =
     $window.FindName(
-        "RecommendedLoadButton"
+        "DiscoveryKeywordBox"
     )
 
 
-$recommendedRefreshButton =
+$discoverySearchButton =
     $window.FindName(
-        "RecommendedRefreshButton"
+        "DiscoverySearchButton"
     )
 
 
-$recommendedDetailButton =
+$discoveryDetailButton =
     $window.FindName(
-        "RecommendedDetailButton"
+        "DiscoveryDetailButton"
     )
 
 
-$recommendedGrid =
+$discoveryGrid =
     $window.FindName(
-        "RecommendedGrid"
+        "DiscoveryGrid"
     )
 
 
-$recommendedStatusText =
+$discoveryStatusText =
     $window.FindName(
-        "RecommendedStatusText"
+        "DiscoveryStatusText"
     )
 
 
-$recommendedRequestSummaryText =
+$discoveryRequestSummaryText =
     $window.FindName(
-        "RecommendedRequestSummaryText"
+        "DiscoveryRequestSummaryText"
     )
 
 
@@ -615,10 +613,6 @@ function Set-MangaCoverImage {
             )
 
 
-    # ======================================
-    # Use local image cache first
-    # ======================================
-
     if (
         Test-Path $imageCachePath
     ) {
@@ -643,10 +637,6 @@ function Set-MangaCoverImage {
             -ErrorAction SilentlyContinue
     }
 
-
-    # ======================================
-    # Download only when local image missing
-    # ======================================
 
     if (
         [string]::IsNullOrWhiteSpace(
@@ -809,7 +799,7 @@ function Reset-MangaDisplay {
 
 
 # ==========================================
-# Search action
+# Detail search action
 # ==========================================
 
 function Invoke-MangaWindowSearch {
@@ -910,18 +900,10 @@ function Invoke-MangaWindowSearch {
         }
 
 
-        # ==================================
-        # Cover image
-        # ==================================
-
         Set-MangaCoverImage `
             -ASIN $asin `
             -ImageUrl $result.SeedImageURL
 
-
-        # ==================================
-        # Series summary
-        # ==================================
 
         $seriesTitleText.Text =
             $result.SeriesTitle
@@ -950,10 +932,6 @@ function Invoke-MangaWindowSearch {
                 -Result $result
 
 
-        # ==================================
-        # Unknown KU summary
-        # ==================================
-
         if (
             $result.UnknownKindleUnlimitedVolumes.Count -gt
             0
@@ -977,15 +955,13 @@ function Invoke-MangaWindowSearch {
         }
 
 
-        # ==================================
-        # Volume rows
-        # ==================================
-
         $rows =
             @()
 
 
-        foreach ($volume in $result.Volumes) {
+        foreach (
+            $volume in $result.Volumes
+        ) {
 
             $kuDisplay =
                 "対象外"
@@ -1068,19 +1044,13 @@ function Invoke-MangaWindowSearch {
             @($rows)
 
 
-        # ==================================
-        # Request summary
-        # ==================================
-
         if (
             $result.CacheStatus -eq
             "Hit"
         ) {
 
             $requestSummaryText.Text =
-                (
-                    "Cache: Hit / OAuth: 0 / Creators API: 0 / 通信なし"
-                )
+                "Cache: Hit / OAuth: 0 / Creators API: 0 / 通信なし"
         }
         else {
 
@@ -1094,10 +1064,6 @@ function Invoke-MangaWindowSearch {
                 )
         }
 
-
-        # ==================================
-        # Status
-        # ==================================
 
         if (
             $result.CacheStatus -eq
@@ -1164,48 +1130,51 @@ function Invoke-MangaWindowSearch {
 }
 
 
-
-
 # ==========================================
-# Recommended manga action
+# Keyword discovery action
 # ==========================================
 
-function Invoke-RecommendedMangaWindowSearch {
-
-    param(
-        [switch]$ForceRefresh
-    )
+function Invoke-MangaDiscoveryWindowSearch {
 
 
-    $recommendedLoadButton.IsEnabled =
+    $keyword =
+        $discoveryKeywordBox.Text.Trim()
+
+
+    if (
+        [string]::IsNullOrWhiteSpace(
+            $keyword
+        )
+    ) {
+
+        $discoveryStatusText.Text =
+            "テーマを入力してください。"
+
+        return
+    }
+
+
+    $discoverySearchButton.IsEnabled =
         $false
 
 
-    $recommendedRefreshButton.IsEnabled =
+    $discoveryDetailButton.IsEnabled =
         $false
 
 
-    $recommendedDetailButton.IsEnabled =
+    $discoveryKeywordBox.IsEnabled =
         $false
 
 
-    $recommendedGrid.ItemsSource =
+    $discoveryGrid.ItemsSource =
         $null
 
 
-    if ($ForceRefresh) {
-
-        $recommendedStatusText.Text =
-            "おすすめ漫画の最新情報を再取得しています..."
-    }
-    else {
-
-        $recommendedStatusText.Text =
-            "おすすめ漫画を取得しています..."
-    }
+    $discoveryStatusText.Text =
+        "候補作品を検索しています..."
 
 
-    $recommendedRequestSummaryText.Text =
+    $discoveryRequestSummaryText.Text =
         ""
 
 
@@ -1215,21 +1184,11 @@ function Invoke-RecommendedMangaWindowSearch {
 
     try {
 
-        if ($ForceRefresh) {
-
-            $result =
-                Get-RecommendedMangaCached `
-                    -Config $config `
-                    -CacheHours 6 `
-                    -ForceRefresh
-        }
-        else {
-
-            $result =
-                Get-RecommendedMangaCached `
-                    -Config $config `
-                    -CacheHours 6
-        }
+        $result =
+            Search-MangaKeywordDiscovery `
+                -Keyword $keyword `
+                -Config $config `
+                -MaxPages 10
 
 
         $rows =
@@ -1237,7 +1196,7 @@ function Invoke-RecommendedMangaWindowSearch {
 
 
         foreach (
-            $item in @($result.Items)
+            $item in @($result.Series)
         ) {
 
             $kuDisplay =
@@ -1245,7 +1204,7 @@ function Invoke-RecommendedMangaWindowSearch {
 
 
             if (
-                $item.IsKindleUnlimited -eq
+                $item.KindleUnlimited -eq
                 $true
             ) {
 
@@ -1254,7 +1213,7 @@ function Invoke-RecommendedMangaWindowSearch {
             }
             elseif (
                 $null -eq
-                $item.IsKindleUnlimited
+                $item.KindleUnlimited
             ) {
 
                 $kuDisplay =
@@ -1267,7 +1226,7 @@ function Invoke-RecommendedMangaWindowSearch {
 
 
             if (
-                $item.IsLimitedFree -eq
+                $item.LimitedFree -eq
                 $true
             ) {
 
@@ -1276,7 +1235,7 @@ function Invoke-RecommendedMangaWindowSearch {
             }
             elseif (
                 $null -eq
-                $item.IsLimitedFree
+                $item.LimitedFree
             ) {
 
                 $limitedFreeDisplay =
@@ -1287,11 +1246,14 @@ function Invoke-RecommendedMangaWindowSearch {
             $rows +=
                 [PSCustomObject]@{
 
-                    Order =
-                        $item.Order
+                    Rank =
+                        $item.Rank
 
-                    Title =
-                        $item.Title
+                    SeriesTitle =
+                        $item.SeriesTitle
+
+                    MatchedItemCount =
+                        $item.MatchedItemCount
 
                     Price =
                         $item.Price
@@ -1302,61 +1264,47 @@ function Invoke-RecommendedMangaWindowSearch {
                     LimitedFreeDisplay =
                         $limitedFreeDisplay
 
-                    IsLimitedFree =
-                        $item.IsLimitedFree
-
-                    ASIN =
-                        $item.ASIN
-
-                    DetailPageURL =
-                        $item.DetailPageURL
+                    SeedASIN =
+                        $item.SeedASIN
                 }
         }
 
 
-        $recommendedGrid.ItemsSource =
+        $discoveryGrid.ItemsSource =
             @($rows)
 
 
-        if (
-            $result.CacheStatus -eq
-            "Hit"
-        ) {
-
-            $recommendedRequestSummaryText.Text =
-                "Cache: Hit / OAuth: 0 / Creators API: 0 / API通信なし"
-        }
-        else {
-
-            $recommendedRequestSummaryText.Text =
-                (
-                    "Cache: Miss / OAuth: {0} / SearchItems: {1} / Creators API: {2}" -f
-                    $result.CurrentOAuthRequests,
-                    $result.SearchItemsRequests,
-                    $result.CurrentCreatorsApiRequests
-                )
-        }
-
-
-        $recommendedStatusText.Text =
+        $discoveryStatusText.Text =
             (
-                "Amazonおすすめ漫画を{0}作品取得しました。作品を選択して「詳細を見る」を押してください。" -f
-                $result.UniqueItemCount
+                "「{0}」から{1}作品の候補を表示しています。検索条件：{2} / Amazon Featured順" -f
+                $keyword,
+                $result.UniqueSeries,
+                $result.AmazonKeyword
+            )
+
+
+        $discoveryRequestSummaryText.Text =
+            (
+                "取得商品：{0} / 作品候補：{1} / SearchItems：{2} / totalResultCount：{3}" -f
+                $result.RetrievedItems,
+                $result.UniqueSeries,
+                $result.SearchItemsRequests,
+                $result.TotalResultCount
             )
     }
     catch {
 
-        $recommendedGrid.ItemsSource =
+        $discoveryGrid.ItemsSource =
             $null
 
 
-        $recommendedStatusText.Text =
-            "おすすめ漫画の取得に失敗しました。"
+        $discoveryStatusText.Text =
+            "キーワード検索に失敗しました。"
 
 
         [System.Windows.MessageBox]::Show(
             $_.Exception.Message,
-            "Recommended Manga Error"
+            "Manga Discovery Error"
         )
     }
     finally {
@@ -1365,33 +1313,37 @@ function Invoke-RecommendedMangaWindowSearch {
             [System.Windows.Input.Cursors]::Arrow
 
 
-        $recommendedLoadButton.IsEnabled =
+        $discoverySearchButton.IsEnabled =
             $true
 
 
-        $recommendedRefreshButton.IsEnabled =
+        $discoveryDetailButton.IsEnabled =
             $true
 
 
-        $recommendedDetailButton.IsEnabled =
+        $discoveryKeywordBox.IsEnabled =
             $true
+
+
+        $discoveryKeywordBox.Focus()
     }
 }
 
 
 # ==========================================
-# Open selected recommendation in detail tab
+# Open selected discovery result
 # ==========================================
 
-function Open-RecommendedMangaDetail {
+function Open-MangaDiscoveryDetail {
+
 
     $selectedItem =
-        $recommendedGrid.SelectedItem
+        $discoveryGrid.SelectedItem
 
 
     if (-not $selectedItem) {
 
-        $recommendedStatusText.Text =
+        $discoveryStatusText.Text =
             "詳細を見る作品を選択してください。"
 
         return
@@ -1399,7 +1351,7 @@ function Open-RecommendedMangaDetail {
 
 
     $asinBox.Text =
-        [string]$selectedItem.ASIN
+        [string]$selectedItem.SeedASIN
 
 
     $mangaTabs.SelectedIndex =
@@ -1411,7 +1363,7 @@ function Open-RecommendedMangaDetail {
 
 
 # ==========================================
-# Search button
+# Detail search controls
 # ==========================================
 
 $searchButton.Add_Click({
@@ -1420,20 +1372,12 @@ $searchButton.Add_Click({
 })
 
 
-# ==========================================
-# Refresh button
-# ==========================================
-
 $refreshButton.Add_Click({
 
     Invoke-MangaWindowSearch `
         -ForceRefresh
 })
 
-
-# ==========================================
-# Enter key search
-# ==========================================
 
 $asinBox.Add_KeyDown({
 
@@ -1452,10 +1396,6 @@ $asinBox.Add_KeyDown({
     }
 })
 
-
-# ==========================================
-# Open selected Amazon page
-# ==========================================
 
 $volumesGrid.Add_MouseDoubleClick({
 
@@ -1496,33 +1436,43 @@ $volumesGrid.Add_MouseDoubleClick({
 })
 
 
-
 # ==========================================
-# Recommended manga buttons
+# Keyword discovery controls
 # ==========================================
 
-$recommendedLoadButton.Add_Click({
+$discoverySearchButton.Add_Click({
 
-    Invoke-RecommendedMangaWindowSearch
+    Invoke-MangaDiscoveryWindowSearch
 })
 
 
-$recommendedRefreshButton.Add_Click({
+$discoveryDetailButton.Add_Click({
 
-    Invoke-RecommendedMangaWindowSearch `
-        -ForceRefresh
+    Open-MangaDiscoveryDetail
 })
 
 
-$recommendedDetailButton.Add_Click({
+$discoveryKeywordBox.Add_KeyDown({
 
-    Open-RecommendedMangaDetail
+    param(
+        $sender,
+        $eventArgs
+    )
+
+
+    if (
+        $eventArgs.Key -eq
+        [System.Windows.Input.Key]::Enter
+    ) {
+
+        Invoke-MangaDiscoveryWindowSearch
+    }
 })
 
 
-$recommendedGrid.Add_MouseDoubleClick({
+$discoveryGrid.Add_MouseDoubleClick({
 
-    Open-RecommendedMangaDetail
+    Open-MangaDiscoveryDetail
 })
 
 

@@ -27,7 +27,6 @@
                         <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
 
-                    <!-- Search area -->
                     <Border
                         Grid.Row="0"
                         Padding="12"
@@ -77,7 +76,6 @@
 
                     </Border>
 
-                    <!-- Series summary -->
                     <Border
                         Grid.Row="1"
                         Margin="0,12,0,0"
@@ -301,9 +299,9 @@
 
             </TabItem>
 
-            <!-- Recommended manga -->
+            <!-- Keyword discovery -->
             <TabItem
-                Header="おすすめ漫画">
+                Header="キーワード発見">
 
                 <Grid Margin="10">
 
@@ -324,49 +322,38 @@
                         <Grid>
 
                             <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
                                 <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
                                 <ColumnDefinition Width="Auto"/>
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
 
-                            <StackPanel
+                            <TextBlock
                                 Grid.Column="0"
-                                VerticalAlignment="Center">
+                                Margin="0,0,10,0"
+                                VerticalAlignment="Center"
+                                Text="テーマ"/>
 
-                                <TextBlock
-                                    FontSize="18"
-                                    FontWeight="SemiBold"
-                                    Text="Amazonおすすめ漫画"/>
-
-                                <TextBlock
-                                    Margin="0,4,0,0"
-                                    Foreground="#666666"
-                                    Text="Amazonの「厳選 人気のおすすめマンガ」から候補を取得します。"/>
-
-                            </StackPanel>
-
-                            <Button
-                                x:Name="RecommendedLoadButton"
+                            <TextBox
+                                x:Name="DiscoveryKeywordBox"
                                 Grid.Column="1"
-                                Width="110"
-                                Height="34"
-                                Margin="12,0,0,0"
-                                Content="おすすめ取得"/>
+                                Height="32"
+                                Padding="6,4"
+                                VerticalContentAlignment="Center"/>
 
                             <Button
-                                x:Name="RecommendedRefreshButton"
+                                x:Name="DiscoverySearchButton"
                                 Grid.Column="2"
                                 Width="90"
-                                Height="34"
-                                Margin="8,0,0,0"
-                                Content="再取得"/>
+                                Height="32"
+                                Margin="10,0,0,0"
+                                Content="検索"/>
 
                             <Button
-                                x:Name="RecommendedDetailButton"
+                                x:Name="DiscoveryDetailButton"
                                 Grid.Column="3"
                                 Width="110"
-                                Height="34"
+                                Height="32"
                                 Margin="8,0,0,0"
                                 Content="詳細を見る"/>
 
@@ -375,14 +362,14 @@
                     </Border>
 
                     <TextBlock
-                        x:Name="RecommendedStatusText"
+                        x:Name="DiscoveryStatusText"
                         Grid.Row="1"
                         Margin="2,10,0,8"
                         Foreground="#555555"
-                        Text="「おすすめ取得」を押すと一覧を表示します。"/>
+                        Text="テーマを入力すると、内部で「マンガ + テーマ」として候補を検索します。"/>
 
                     <DataGrid
-                        x:Name="RecommendedGrid"
+                        x:Name="DiscoveryGrid"
                         Grid.Row="2"
                         AutoGenerateColumns="False"
                         CanUserAddRows="False"
@@ -397,77 +384,23 @@
 
                             <DataGridTextColumn
                                 Header="#"
-                                Binding="{Binding Order}"
+                                Binding="{Binding Rank}"
                                 Width="45"/>
 
                             <DataGridTextColumn
                                 Header="作品名"
-                                Binding="{Binding Title}"
+                                Binding="{Binding SeriesTitle}"
                                 Width="*"/>
 
-                            <DataGridTemplateColumn
+                            <DataGridTextColumn
+                                Header="ヒット"
+                                Binding="{Binding MatchedItemCount}"
+                                Width="70"/>
+
+                            <DataGridTextColumn
                                 Header="価格"
-                                Width="125">
-
-                                <DataGridTemplateColumn.CellTemplate>
-
-                                    <DataTemplate>
-
-                                        <Grid>
-
-                                            <TextBlock
-                                                x:Name="RecommendedNormalPriceText"
-                                                VerticalAlignment="Center"
-                                                Text="{Binding Price}"/>
-
-                                            <StackPanel
-                                                x:Name="RecommendedFreePricePanel"
-                                                Orientation="Horizontal"
-                                                VerticalAlignment="Center"
-                                                Visibility="Collapsed">
-
-                                                <TextBlock
-                                                    VerticalAlignment="Center"
-                                                    Foreground="#777777"
-                                                    Text="{Binding Price}"
-                                                    TextDecorations="Strikethrough"/>
-
-                                                <TextBlock
-                                                    Margin="6,0,0,0"
-                                                    VerticalAlignment="Center"
-                                                    FontWeight="Bold"
-                                                    Foreground="#D32F2F"
-                                                    Text="￥0"/>
-
-                                            </StackPanel>
-
-                                        </Grid>
-
-                                        <DataTemplate.Triggers>
-
-                                            <DataTrigger
-                                                Binding="{Binding IsLimitedFree}"
-                                                Value="True">
-
-                                                <Setter
-                                                    TargetName="RecommendedNormalPriceText"
-                                                    Property="Visibility"
-                                                    Value="Collapsed"/>
-
-                                                <Setter
-                                                    TargetName="RecommendedFreePricePanel"
-                                                    Property="Visibility"
-                                                    Value="Visible"/>
-
-                                            </DataTrigger>
-
-                                        </DataTemplate.Triggers>
-
-                                    </DataTemplate>
-
-                                </DataGridTemplateColumn.CellTemplate>
-
-                            </DataGridTemplateColumn>
+                                Binding="{Binding Price}"
+                                Width="110"/>
 
                             <DataGridTextColumn
                                 Header="KU"
@@ -481,7 +414,7 @@
 
                             <DataGridTextColumn
                                 Header="ASIN"
-                                Binding="{Binding ASIN}"
+                                Binding="{Binding SeedASIN}"
                                 Width="115"/>
 
                         </DataGrid.Columns>
@@ -489,7 +422,7 @@
                     </DataGrid>
 
                     <TextBlock
-                        x:Name="RecommendedRequestSummaryText"
+                        x:Name="DiscoveryRequestSummaryText"
                         Grid.Row="3"
                         Margin="2,8,0,0"
                         Foreground="#777777"
