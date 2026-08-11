@@ -36,6 +36,8 @@ $xamlPath =
 
 . "$projectRoot\Manga\Services\Get-MangaSeries.ps1"
 
+. "$projectRoot\Manga\Services\Get-MangaSeriesCached.ps1"
+
 
 # ==========================================
 # Validate files
@@ -417,10 +419,11 @@ function Invoke-MangaWindowSearch {
     try {
 
         $result =
-            Get-MangaSeries `
+            Get-MangaSeriesCached `
                 -SeedASIN $asin `
                 -Config $config `
-                -AccessToken $accessToken
+                -AccessToken $accessToken `
+                -CacheHours 6
 
 
         # ==================================
@@ -532,20 +535,52 @@ function Invoke-MangaWindowSearch {
         # Request summary
         # ==================================
 
-        $requestSummaryText.Text =
-            (
-                "SearchItems: {0} / GetItems: {1} / API合計: {2}" -f
-                $result.SearchItemsRequests,
-                $result.GetItemsRequests,
-                $result.CreatorsApiRequests
-            )
+        if (
+            $result.CacheStatus -eq
+            "Hit"
+        ) {
+
+            $requestSummaryText.Text =
+                (
+                    "Cache: Hit / 今回のAPI呼び出し: 0 / キャッシュ作成時API: {0}" -f
+                    $result.CreatorsApiRequests
+                )
+        }
+        else {
+
+            $requestSummaryText.Text =
+                (
+                    "Cache: Miss / SearchItems: {0} / GetItems: {1} / 今回のAPI呼び出し: {2}" -f
+                    $result.SearchItemsRequests,
+                    $result.GetItemsRequests,
+                    $result.CreatorsApiRequests
+                )
+        }
 
 
-        $statusText.Text =
-            (
-                "{0}巻を取得しました。" -f
-                $result.DetectedVolumeCount
-            )
+        # ==================================
+        # Status
+        # ==================================
+
+        if (
+            $result.CacheStatus -eq
+            "Hit"
+        ) {
+
+            $statusText.Text =
+                (
+                    "{0}巻をキャッシュから読み込みました。" -f
+                    $result.DetectedVolumeCount
+                )
+        }
+        else {
+
+            $statusText.Text =
+                (
+                    "{0}巻を取得しました。" -f
+                    $result.DetectedVolumeCount
+                )
+        }
     }
     catch {
 
