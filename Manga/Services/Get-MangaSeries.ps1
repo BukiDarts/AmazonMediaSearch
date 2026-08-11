@@ -81,6 +81,15 @@ function Get-MangaVolumeNumber {
         return [int]$Matches[1]
     }
 
+    # Support titles where the volume number appears before
+    # one or more trailing labels, such as "Series 1 (Label)".
+    if (
+        $normalizedTitle -match
+        '(?<!\d)(\d+)\s*(?:\([^()]*\)\s*)+$'
+    ) {
+        return [int]$Matches[1]
+    }
+
     if (
         $normalizedTitle -match
         '\s(\d+)\s*$'
@@ -1208,6 +1217,19 @@ function Get-MangaSeries {
             Sort-Object Volume
         )
 
+    # Keep only direct series-volume titles before tail verification.
+    # This removes unrelated items such as magazines with years in the title.
+    $seriesIndex =
+        @(
+            $seriesIndex |
+            Where-Object {
+                Test-MangaDirectVolumeTitle `
+                    -SeriesTitle $seriesTitle `
+                    -Volume $_.Volume `
+                    -Title $_.Title
+            }
+        )
+
     # ======================================
     # Determine initial search truncation
     # ======================================
@@ -1461,7 +1483,6 @@ function Get-MangaSeries {
             $seriesIndex |
             Sort-Object Volume
         )
-
     # ======================================
     # Find missing KU metadata
     # ======================================
