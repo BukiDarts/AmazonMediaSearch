@@ -154,6 +154,12 @@ $searchButton =
     )
 
 
+$refreshButton =
+    $window.FindName(
+        "RefreshButton"
+    )
+
+
 $seriesTitleText =
     $window.FindName(
         "SeriesTitleText"
@@ -169,6 +175,12 @@ $volumeSummaryText =
 $kuSummaryText =
     $window.FindName(
         "KUSummaryText"
+    )
+
+
+$kuCountText =
+    $window.FindName(
+        "KUCountText"
     )
 
 
@@ -194,6 +206,68 @@ $requestSummaryText =
     $window.FindName(
         "RequestSummaryText"
     )
+
+
+$coverImage =
+    $window.FindName(
+        "CoverImage"
+    )
+
+
+# ==========================================
+# Resolve ASIN
+# ==========================================
+
+function Resolve-AmazonASIN {
+
+    param(
+        [string]$InputText
+    )
+
+
+    if (
+        [string]::IsNullOrWhiteSpace(
+            $InputText
+        )
+    ) {
+
+        return ""
+    }
+
+
+    $text =
+        $InputText.Trim()
+
+
+    if (
+        $text -match
+        '^[A-Za-z0-9]{10}$'
+    ) {
+
+        return $Matches[0].ToUpper()
+    }
+
+
+    if (
+        $text -match
+        '(?i)/(?:dp|gp/product|gp/aw/d)/([A-Z0-9]{10})(?:[/?]|$)'
+    ) {
+
+        return $Matches[1].ToUpper()
+    }
+
+
+    if (
+        $text -match
+        '(?i)\b([A-Z0-9]{10})\b'
+    ) {
+
+        return $Matches[1].ToUpper()
+    }
+
+
+    return ""
+}
 
 
 # ==========================================
@@ -344,6 +418,124 @@ function Get-KUSummaryText {
 
 
 # ==========================================
+# Set cover image
+# ==========================================
+
+function Set-MangaCoverImage {
+
+    param(
+        [string]$ImageUrl
+    )
+
+
+    $coverImage.Source =
+        $null
+
+
+    if (
+        [string]::IsNullOrWhiteSpace(
+            $ImageUrl
+        )
+    ) {
+
+        return
+    }
+
+
+    $webClient =
+        $null
+
+
+    $memoryStream =
+        $null
+
+
+    try {
+
+        $webClient =
+            New-Object `
+                System.Net.WebClient
+
+
+        $webClient.Headers.Add(
+            "User-Agent",
+            "Mozilla/5.0"
+        )
+
+
+        $imageBytes =
+            $webClient.DownloadData(
+                $ImageUrl
+            )
+
+
+        if (
+            $null -eq $imageBytes -or
+            $imageBytes.Length -eq 0
+        ) {
+
+            return
+        }
+
+
+        $memoryStream =
+            New-Object `
+                System.IO.MemoryStream `
+                -ArgumentList @(,$imageBytes)
+
+
+        $bitmap =
+            New-Object `
+                System.Windows.Media.Imaging.BitmapImage
+
+
+        $bitmap.BeginInit()
+
+
+        $bitmap.CacheOption =
+            [System.Windows.Media.Imaging.BitmapCacheOption]::OnLoad
+
+
+        $bitmap.StreamSource =
+            $memoryStream
+
+
+        $bitmap.EndInit()
+
+
+        $bitmap.Freeze()
+
+
+        $coverImage.Source =
+            $bitmap
+    }
+    catch {
+
+        $coverImage.Source =
+            $null
+
+        Write-Host (
+            "Failed to load cover image: {0}" -f
+            $_.Exception.Message
+        )
+    }
+    finally {
+
+        if ($memoryStream) {
+
+            $memoryStream.Dispose()
+        }
+
+
+        if ($webClient) {
+
+            $webClient.Dispose()
+        }
+    }
+}
+
+
+# ==========================================
 # Reset display
 # ==========================================
 
@@ -361,6 +553,10 @@ function Reset-MangaDisplay {
         "Kindle Unlimited：-"
 
 
+    $kuCountText.Text =
+        ""
+
+
     $unknownSummaryText.Text =
         ""
 
@@ -371,6 +567,10 @@ function Reset-MangaDisplay {
 
     $volumesGrid.ItemsSource =
         $null
+
+
+    $coverImage.Source =
+        $null
 }
 
 
@@ -380,8 +580,31 @@ function Reset-MangaDisplay {
 
 function Invoke-MangaWindowSearch {
 
-    $asin =
+    param(
+        [switch]$ForceRefresh
+    )
+
+
+    $inputText =
         $asinBox.Text.Trim()
+
+
+    if (
+        [string]::IsNullOrWhiteSpace(
+            $inputText
+        )
+    ) {
+
+        $statusText.Text =
+            "ASINまたはAmazon商品URLを入力してください。"
+
+        return
+    }
+
+
+    $asin =
+        Resolve-AmazonASIN `
+            -InputText $inputText
 
 
     if (
@@ -391,10 +614,14 @@ function Invoke-MangaWindowSearch {
     ) {
 
         $statusText.Text =
-            "ASINを入力してください。"
+            "ASINを判定できませんでした。"
 
         return
     }
+
+
+    $asinBox.Text =
+        $asin
 
 
     Reset-MangaDisplay
@@ -404,12 +631,24 @@ function Invoke-MangaWindowSearch {
         $false
 
 
+    $refreshButton.IsEnabled =
+        $false
+
+
     $asinBox.IsEnabled =
         $false
 
 
-    $statusText.Text =
-        "検索中です..."
+    if ($ForceRefresh) {
+
+        $statusText.Text =
+            "最新情報を再取得しています..."
+    }
+    else {
+
+        $statusText.Text =
+            "検索中です..."
+    }
 
 
     $window.Cursor =
@@ -418,12 +657,33 @@ function Invoke-MangaWindowSearch {
 
     try {
 
-        $result =
-            Get-MangaSeriesCached `
-                -SeedASIN $asin `
-                -Config $config `
-                -AccessToken $accessToken `
-                -CacheHours 6
+        if ($ForceRefresh) {
+
+            $result =
+                Get-MangaSeriesCached `
+                    -SeedASIN $asin `
+                    -Config $config `
+                    -AccessToken $accessToken `
+                    -CacheHours 6 `
+                    -ForceRefresh
+        }
+        else {
+
+            $result =
+                Get-MangaSeriesCached `
+                    -SeedASIN $asin `
+                    -Config $config `
+                    -AccessToken $accessToken `
+                    -CacheHours 6
+        }
+
+
+        # ==================================
+        # Cover image
+        # ==================================
+
+        Set-MangaCoverImage `
+            -ImageUrl $result.SeedImageURL
 
 
         # ==================================
@@ -442,6 +702,14 @@ function Invoke-MangaWindowSearch {
         $kuSummaryText.Text =
             Get-KUSummaryText `
                 -Result $result
+
+
+        $kuCountText.Text =
+            (
+                "KU対象：{0} / {1}巻" -f
+                $result.KindleUnlimitedVolumeCount,
+                $result.DetectedVolumeCount
+            )
 
 
         # ==================================
@@ -521,6 +789,9 @@ function Invoke-MangaWindowSearch {
                     ASIN =
                         $volume.ASIN
 
+                    ImageURL =
+                        $volume.ImageURL
+
                     DetailPageURL =
                         $volume.DetailPageURL
                 }
@@ -573,6 +844,14 @@ function Invoke-MangaWindowSearch {
                     $result.DetectedVolumeCount
                 )
         }
+        elseif ($ForceRefresh) {
+
+            $statusText.Text =
+                (
+                    "{0}巻の最新情報を取得しました。" -f
+                    $result.DetectedVolumeCount
+                )
+        }
         else {
 
             $statusText.Text =
@@ -606,6 +885,10 @@ function Invoke-MangaWindowSearch {
             $true
 
 
+        $refreshButton.IsEnabled =
+            $true
+
+
         $asinBox.IsEnabled =
             $true
 
@@ -616,12 +899,23 @@ function Invoke-MangaWindowSearch {
 
 
 # ==========================================
-# Button event
+# Search button
 # ==========================================
 
 $searchButton.Add_Click({
 
     Invoke-MangaWindowSearch
+})
+
+
+# ==========================================
+# Refresh button
+# ==========================================
+
+$refreshButton.Add_Click({
+
+    Invoke-MangaWindowSearch `
+        -ForceRefresh
 })
 
 
@@ -643,6 +937,49 @@ $asinBox.Add_KeyDown({
     ) {
 
         Invoke-MangaWindowSearch
+    }
+})
+
+
+# ==========================================
+# Open selected Amazon page
+# ==========================================
+
+$volumesGrid.Add_MouseDoubleClick({
+
+    $selectedItem =
+        $volumesGrid.SelectedItem
+
+
+    if (-not $selectedItem) {
+
+        return
+    }
+
+
+    $url =
+        [string]$selectedItem.DetailPageURL
+
+
+    if (
+        [string]::IsNullOrWhiteSpace(
+            $url
+        )
+    ) {
+
+        return
+    }
+
+
+    try {
+
+        Start-Process $url
+    }
+    catch {
+
+        [System.Windows.MessageBox]::Show(
+            "Failed to open the product page."
+        )
     }
 })
 

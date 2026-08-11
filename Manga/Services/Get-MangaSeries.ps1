@@ -21,22 +21,18 @@ function ConvertTo-MangaNormalizedText {
         [string]$Text
     )
 
-
     if (
         [string]::IsNullOrWhiteSpace(
             $Text
         )
     ) {
-
         return ""
     }
-
 
     $normalized =
         $Text.Normalize(
             [Text.NormalizationForm]::FormKC
         )
-
 
     return (
         (
@@ -52,57 +48,45 @@ function Get-MangaVolumeNumber {
         [string]$Title
     )
 
-
     $normalizedTitle =
         ConvertTo-MangaNormalizedText `
             -Text $Title
-
 
     if (
         [string]::IsNullOrWhiteSpace(
             $normalizedTitle
         )
     ) {
-
         return $null
     }
-
 
     if (
         $normalizedTitle -match
         '\((\d+)\)'
     ) {
-
         return [int]$Matches[1]
     }
-
 
     if (
         $normalizedTitle -match
         '\u7B2C\s*(\d+)\s*\u5DFB'
     ) {
-
         return [int]$Matches[1]
     }
-
 
     if (
         $normalizedTitle -match
         '(\d+)\s*\u5DFB'
     ) {
-
         return [int]$Matches[1]
     }
-
 
     if (
         $normalizedTitle -match
         '\s(\d+)\s*$'
     ) {
-
         return [int]$Matches[1]
     }
-
 
     return $null
 }
@@ -114,69 +98,57 @@ function Get-MangaSeriesTitle {
         [string]$Title
     )
 
-
     $normalizedTitle =
         ConvertTo-MangaNormalizedText `
             -Text $Title
-
 
     if (
         [string]::IsNullOrWhiteSpace(
             $normalizedTitle
         )
     ) {
-
         return ""
     }
-
 
     if (
         $normalizedTitle -match
         '^(.*?)\s*\((\d+)\)\s*(?:\([^()]*\))*\s*$'
     ) {
-
         return (
             ConvertTo-MangaNormalizedText `
                 -Text $Matches[1]
         )
     }
-
 
     if (
         $normalizedTitle -match
         '^(.*?)\s*\u7B2C\s*\d+\s*\u5DFB(?:\s*\([^()]*\))*\s*$'
     ) {
-
         return (
             ConvertTo-MangaNormalizedText `
                 -Text $Matches[1]
         )
     }
-
 
     if (
         $normalizedTitle -match
         '^(.*?)\s*\d+\s*\u5DFB(?:\s*\([^()]*\))*\s*$'
     ) {
-
         return (
             ConvertTo-MangaNormalizedText `
                 -Text $Matches[1]
         )
     }
-
 
     if (
         $normalizedTitle -match
         '^(.*?)\s+(\d+)\s*$'
     ) {
-
         return (
             ConvertTo-MangaNormalizedText `
                 -Text $Matches[1]
         )
     }
-
 
     return $normalizedTitle
 }
@@ -188,31 +160,25 @@ function Get-MangaTrailingLabel {
         [string]$Title
     )
 
-
     $normalizedTitle =
         ConvertTo-MangaNormalizedText `
             -Text $Title
-
 
     if (
         $normalizedTitle -match
         '\(([^()]*)\)\s*$'
     ) {
-
         $label =
             ConvertTo-MangaNormalizedText `
                 -Text $Matches[1]
-
 
         if (
             $label -notmatch
             '^\d+$'
         ) {
-
             return $label
         }
     }
-
 
     return ""
 }
@@ -224,33 +190,27 @@ function Get-MangaAuthorNames {
         $Item
     )
 
-
     $names =
         @()
-
 
     if (
         $Item.itemInfo -and
         $Item.itemInfo.byLineInfo -and
         $Item.itemInfo.byLineInfo.contributors
     ) {
-
         foreach (
             $contributor in
             $Item.itemInfo.byLineInfo.contributors
         ) {
-
             if (
                 $contributor.roleType -eq
                 "author"
             ) {
-
                 $names +=
                     $contributor.name
             }
         }
     }
-
 
     return @(
         $names |
@@ -265,18 +225,15 @@ function Get-MangaBinding {
         $Item
     )
 
-
     if (
         $Item.itemInfo -and
         $Item.itemInfo.classifications -and
         $Item.itemInfo.classifications.binding
     ) {
-
         return (
             $Item.itemInfo.classifications.binding.displayValue
         )
     }
-
 
     return ""
 }
@@ -288,15 +245,12 @@ function Get-MangaPrice {
         $Item
     )
 
-
     if (
         -not $Item.offersV2 -or
         -not $Item.offersV2.listings
     ) {
-
         return ""
     }
-
 
     $buyBox =
         @(
@@ -307,18 +261,15 @@ function Get-MangaPrice {
         ) |
         Select-Object -First 1
 
-
     if (
         $buyBox -and
         $buyBox.price -and
         $buyBox.price.money
     ) {
-
         return (
             $buyBox.price.money.displayAmount
         )
     }
-
 
     $firstListing =
         @(
@@ -326,18 +277,34 @@ function Get-MangaPrice {
         ) |
         Select-Object -First 1
 
-
     if (
         $firstListing -and
         $firstListing.price -and
         $firstListing.price.money
     ) {
-
         return (
             $firstListing.price.money.displayAmount
         )
     }
 
+    return ""
+}
+
+
+function Get-MangaImageUrl {
+
+    param(
+        $Item
+    )
+
+    if (
+        $Item.images -and
+        $Item.images.primary -and
+        $Item.images.primary.medium -and
+        $Item.images.primary.medium.url
+    ) {
+        return [string]$Item.images.primary.medium.url
+    }
 
     return ""
 }
@@ -349,30 +316,22 @@ function Test-MangaKUMetadataAvailable {
         $Item
     )
 
-
     if (-not $Item) {
-
         return $false
     }
-
 
     if (-not $Item.browseNodeInfo) {
-
         return $false
     }
-
 
     if (-not $Item.browseNodeInfo.browseNodes) {
-
         return $false
     }
-
 
     $nodes =
         @(
             $Item.browseNodeInfo.browseNodes
         )
-
 
     return (
         $nodes.Count -gt 0
@@ -386,31 +345,25 @@ function Test-MangaKindleUnlimited {
         $Item
     )
 
-
     if (
         -not (
             Test-MangaKUMetadataAvailable `
                 -Item $Item
         )
     ) {
-
         return $null
     }
-
 
     $browseNodeJson =
         $Item.browseNodeInfo |
         ConvertTo-Json -Depth 30
 
-
     if (
         $browseNodeJson -match
         'Kindle Unlimited'
     ) {
-
         return $true
     }
-
 
     return $false
 }
@@ -421,7 +374,6 @@ function ConvertTo-MangaVolumeRanges {
     param(
         [array]$Volumes
     )
-
 
     $numbers =
         @(
@@ -435,57 +387,45 @@ function ConvertTo-MangaVolumeRanges {
             Sort-Object -Unique
         )
 
-
     if ($numbers.Count -eq 0) {
-
         return "none"
     }
-
 
     $ranges =
         @()
 
-
     $rangeStart =
         $numbers[0]
 
-
     $previous =
         $numbers[0]
-
 
     for (
         $i = 1;
         $i -lt $numbers.Count;
         $i++
     ) {
-
         $current =
             $numbers[$i]
-
 
         if (
             $current -eq
             ($previous + 1)
         ) {
-
             $previous =
                 $current
 
             continue
         }
 
-
         if (
             $rangeStart -eq
             $previous
         ) {
-
             $ranges +=
                 "$rangeStart"
         }
         else {
-
             $ranges +=
                 (
                     "{0}-{1}" -f
@@ -494,26 +434,21 @@ function ConvertTo-MangaVolumeRanges {
                 )
         }
 
-
         $rangeStart =
             $current
-
 
         $previous =
             $current
     }
 
-
     if (
         $rangeStart -eq
         $previous
     ) {
-
         $ranges +=
             "$rangeStart"
     }
     else {
-
         $ranges +=
             (
                 "{0}-{1}" -f
@@ -521,7 +456,6 @@ function ConvertTo-MangaVolumeRanges {
                 $previous
             )
     }
-
 
     return (
         $ranges -join ", "
@@ -542,22 +476,18 @@ function Test-MangaDirectVolumeTitle {
         [string]$Title
     )
 
-
     $normalizedSeries =
         ConvertTo-MangaNormalizedText `
             -Text $SeriesTitle
-
 
     $normalizedTitle =
         ConvertTo-MangaNormalizedText `
             -Text $Title
 
-
     $escapedSeries =
         [regex]::Escape(
             $normalizedSeries
         )
-
 
     $patterns =
         @(
@@ -591,18 +521,14 @@ function Test-MangaDirectVolumeTitle {
             )
         )
 
-
     foreach ($pattern in $patterns) {
-
         if (
             $normalizedTitle -match
             $pattern
         ) {
-
             return $true
         }
     }
-
 
     return $false
 }
@@ -627,10 +553,8 @@ function Get-MangaCandidateScore {
         [array]$CandidateAuthors = @()
     )
 
-
     $score =
         0
-
 
     if (
         Test-MangaDirectVolumeTitle `
@@ -638,16 +562,13 @@ function Get-MangaCandidateScore {
             -Volume $Volume `
             -Title $Title
     ) {
-
         $score +=
             1000
     }
 
-
     $candidateLabel =
         Get-MangaTrailingLabel `
             -Title $Title
-
 
     if (
         -not [string]::IsNullOrWhiteSpace(
@@ -656,19 +577,15 @@ function Get-MangaCandidateScore {
         $candidateLabel -eq
         $SeedLabel
     ) {
-
         $score +=
             300
     }
 
-
     foreach ($seedAuthor in $SeedAuthors) {
-
         if (
             $CandidateAuthors -contains
             $seedAuthor
         ) {
-
             $score +=
                 100
 
@@ -676,22 +593,18 @@ function Get-MangaCandidateScore {
         }
     }
 
-
     $normalizedSeries =
         ConvertTo-MangaNormalizedText `
             -Text $SeriesTitle
-
 
     $normalizedTitle =
         ConvertTo-MangaNormalizedText `
             -Text $Title
 
-
     $escapedSeries =
         [regex]::Escape(
             $normalizedSeries
         )
-
 
     if (
         $normalizedTitle -match
@@ -703,11 +616,9 @@ function Get-MangaCandidateScore {
             '\)'
         )
     ) {
-
         $score -=
             500
     }
-
 
     return $score
 }
@@ -730,33 +641,26 @@ function Test-MangaTailCandidate {
         [array]$SeedAuthors = @()
     )
 
-
     if (
         -not $Item.itemInfo -or
         -not $Item.itemInfo.title
     ) {
-
         return $false
     }
 
-
     $title =
         $Item.itemInfo.title.displayValue
-
 
     $volume =
         Get-MangaVolumeNumber `
             -Title $title
 
-
     if (
         $null -eq $volume -or
         $volume -ne $ExpectedVolume
     ) {
-
         return $false
     }
-
 
     if (
         -not (
@@ -766,10 +670,8 @@ function Test-MangaTailCandidate {
                 -Title $title
         )
     ) {
-
         return $false
     }
-
 
     $kindleBinding =
         ([char]0x004B) +
@@ -780,31 +682,25 @@ function Test-MangaTailCandidate {
         ([char]0x0065) +
         ([char]0x7248)
 
-
     $binding =
         Get-MangaBinding `
             -Item $Item
-
 
     if (
         $binding -ne
         $kindleBinding
     ) {
-
         return $false
     }
-
 
     if (
         -not [string]::IsNullOrWhiteSpace(
             $SeedLabel
         )
     ) {
-
         $candidateLabel =
             Get-MangaTrailingLabel `
                 -Title $title
-
 
         if (
             -not [string]::IsNullOrWhiteSpace(
@@ -813,32 +709,25 @@ function Test-MangaTailCandidate {
             $candidateLabel -ne
             $SeedLabel
         ) {
-
             return $false
         }
     }
 
-
     if ($SeedAuthors.Count -gt 0) {
-
         $candidateAuthors =
             @(
                 Get-MangaAuthorNames `
                     -Item $Item
             )
 
-
         $authorMatched =
             $false
 
-
         foreach ($seedAuthor in $SeedAuthors) {
-
             if (
                 $candidateAuthors -contains
                 $seedAuthor
             ) {
-
                 $authorMatched =
                     $true
 
@@ -846,13 +735,10 @@ function Test-MangaTailCandidate {
             }
         }
 
-
         if (-not $authorMatched) {
-
             return $false
         }
     }
-
 
     return $true
 }
@@ -877,20 +763,16 @@ function Get-MangaSeries {
         [int]$RequestDelayMilliseconds = 1100
     )
 
-
     $seedASIN =
         $SeedASIN.Trim()
-
 
     if (
         [string]::IsNullOrWhiteSpace(
             $seedASIN
         )
     ) {
-
         throw "Seed ASIN is empty."
     }
-
 
     $resources =
         @(
@@ -911,21 +793,17 @@ function Get-MangaSeries {
             "browseNodeInfo.browseNodes.ancestor"
         )
 
-
     $searchRequestCount =
         0
 
-
     $getItemsRequestCount =
         0
-
 
     # ======================================
     # Seed GetItems
     # ======================================
 
     $getItemsRequestCount++
-
 
     $seedItems =
         @(
@@ -936,54 +814,42 @@ function Get-MangaSeries {
                 -AccessToken $AccessToken
         )
 
-
     if ($seedItems.Count -eq 0) {
-
         throw "Seed item was not returned."
     }
 
-
     $seedItem =
         $seedItems[0]
-
 
     if (
         -not $seedItem.itemInfo -or
         -not $seedItem.itemInfo.title
     ) {
-
         throw "Seed title was not returned."
     }
-
 
     $seedTitle =
         $seedItem.itemInfo.title.displayValue
 
-
     $seriesTitle =
         Get-MangaSeriesTitle `
             -Title $seedTitle
-
 
     if (
         [string]::IsNullOrWhiteSpace(
             $seriesTitle
         )
     ) {
-
         throw "Series title could not be determined."
     }
-
 
     $seedVolume =
         Get-MangaVolumeNumber `
             -Title $seedTitle
 
-
     $seedLabel =
         Get-MangaTrailingLabel `
             -Title $seedTitle
-
 
     $seedAuthors =
         @(
@@ -991,13 +857,15 @@ function Get-MangaSeries {
                 -Item $seedItem
         )
 
+    $seedImageUrl =
+        Get-MangaImageUrl `
+            -Item $seedItem
 
     # ======================================
     # Search first page
     # ======================================
 
     $searchRequestCount++
-
 
     $firstResponse =
         Invoke-AmazonSearch `
@@ -1009,113 +877,89 @@ function Get-MangaSeries {
             -ItemCount 10 `
             -ItemPage 1
 
-
     $totalResultCount =
         0
-
 
     if (
         $firstResponse.searchResult -and
         $null -ne
         $firstResponse.searchResult.totalResultCount
     ) {
-
         $totalResultCount =
             [int]$firstResponse.searchResult.totalResultCount
     }
 
-
     $requiredPages =
         1
 
-
     if ($totalResultCount -gt 0) {
-
         $requiredPages =
             [int][Math]::Ceiling(
                 $totalResultCount / 10.0
             )
 
-
         if (
             $requiredPages -gt
             $MaxSearchPages
         ) {
-
             $requiredPages =
                 $MaxSearchPages
         }
     }
 
-
     $searchItems =
         @()
-
 
     $searchItemMap =
         @{}
 
-
     $seenAsins =
         @{}
 
-
     $firstPageItems =
         @()
-
 
     if (
         $firstResponse.searchResult -and
         $firstResponse.searchResult.items
     ) {
-
         $firstPageItems =
             @(
                 $firstResponse.searchResult.items
             )
     }
 
-
     foreach ($item in $firstPageItems) {
-
         if (
             -not $seenAsins.ContainsKey(
                 $item.asin
             )
         ) {
-
             $seenAsins[$item.asin] =
                 $true
 
-
             $searchItemMap[$item.asin] =
                 $item
-
 
             $searchItems +=
                 $item
         }
     }
 
-
     # ======================================
     # Remaining required pages
     # ======================================
 
     if ($requiredPages -gt 1) {
-
         for (
             $page = 2;
             $page -le $requiredPages;
             $page++
         ) {
-
             Start-Sleep `
                 -Milliseconds $RequestDelayMilliseconds
 
-
             $searchRequestCount++
-
 
             $response =
                 Invoke-AmazonSearch `
@@ -1127,44 +971,34 @@ function Get-MangaSeries {
                     -ItemCount 10 `
                     -ItemPage $page
 
-
             $pageItems =
                 @()
-
 
             if (
                 $response.searchResult -and
                 $response.searchResult.items
             ) {
-
                 $pageItems =
                     @(
                         $response.searchResult.items
                     )
             }
 
-
             if ($pageItems.Count -eq 0) {
-
                 break
             }
 
-
             foreach ($item in $pageItems) {
-
                 if (
                     -not $seenAsins.ContainsKey(
                         $item.asin
                     )
                 ) {
-
                     $seenAsins[$item.asin] =
                         $true
 
-
                     $searchItemMap[$item.asin] =
                         $item
-
 
                     $searchItems +=
                         $item
@@ -1172,7 +1006,6 @@ function Get-MangaSeries {
             }
         }
     }
-
 
     # ======================================
     # Build candidate list
@@ -1182,12 +1015,10 @@ function Get-MangaSeries {
         ConvertTo-MangaNormalizedText `
             -Text $seriesTitle
 
-
     $escapedSeriesTitle =
         [regex]::Escape(
             $normalizedSeriesTitle
         )
-
 
     $kindleBinding =
         ([char]0x004B) +
@@ -1198,71 +1029,55 @@ function Get-MangaSeries {
         ([char]0x0065) +
         ([char]0x7248)
 
-
     $candidates =
         @()
 
-
     foreach ($item in $searchItems) {
-
         if (
             -not $item.itemInfo -or
             -not $item.itemInfo.title
         ) {
-
             continue
         }
 
-
         $title =
             $item.itemInfo.title.displayValue
-
 
         $normalizedTitle =
             ConvertTo-MangaNormalizedText `
                 -Text $title
 
-
         if (
             $normalizedTitle -notmatch
             ("^" + $escapedSeriesTitle)
         ) {
-
             continue
         }
-
 
         $volume =
             Get-MangaVolumeNumber `
                 -Title $title
 
-
         if ($null -eq $volume) {
-
             continue
         }
-
 
         $binding =
             Get-MangaBinding `
                 -Item $item
 
-
         if (
             $binding -ne
             $kindleBinding
         ) {
-
             continue
         }
-
 
         $candidateAuthors =
             @(
                 Get-MangaAuthorNames `
                     -Item $item
             )
-
 
         $score =
             Get-MangaCandidateScore `
@@ -1273,10 +1088,8 @@ function Get-MangaSeries {
                 -SeedAuthors $seedAuthors `
                 -CandidateAuthors $candidateAuthors
 
-
         $candidates +=
             [PSCustomObject]@{
-
                 Volume =
                     [int]$volume
 
@@ -1315,9 +1128,14 @@ function Get-MangaSeries {
                         Get-MangaPrice `
                             -Item $item
                     )
+
+                ImageURL =
+                    (
+                        Get-MangaImageUrl `
+                            -Item $item
+                    )
             }
     }
-
 
     # ======================================
     # Select best candidate per volume
@@ -1325,7 +1143,6 @@ function Get-MangaSeries {
 
     $seriesIndex =
         @()
-
 
     $volumeGroups =
         @(
@@ -1336,9 +1153,7 @@ function Get-MangaSeries {
             }
         )
 
-
     foreach ($group in $volumeGroups) {
-
         $selected =
             @(
                 $group.Group |
@@ -1354,21 +1169,17 @@ function Get-MangaSeries {
             ) |
             Select-Object -First 1
 
-
         if ($selected) {
-
             $seriesIndex +=
                 $selected
         }
     }
-
 
     $seriesIndex =
         @(
             $seriesIndex |
             Sort-Object Volume
         )
-
 
     # ======================================
     # Determine initial search truncation
@@ -1377,16 +1188,13 @@ function Get-MangaSeries {
     $isSearchTruncated =
         $false
 
-
     if (
         $totalResultCount -gt
         $searchItems.Count
     ) {
-
         $isSearchTruncated =
             $true
     }
-
 
     # ======================================
     # Tail verification
@@ -1395,20 +1203,16 @@ function Get-MangaSeries {
     $tailChecks =
         @()
 
-
     $tailStatus =
         "NotRequired"
-
 
     if (
         $isSearchTruncated -and
         $seriesIndex.Count -gt 0 -and
         $MaxTailSearchRequests -gt 0
     ) {
-
         $tailStatus =
             "Unchecked"
-
 
         $currentMaxVolume =
             (
@@ -1416,30 +1220,25 @@ function Get-MangaSeries {
                 Measure-Object -Maximum
             ).Maximum
 
-
         for (
             $tailAttempt = 1;
             $tailAttempt -le $MaxTailSearchRequests;
             $tailAttempt++
         ) {
-
             $targetVolume =
                 [int]$currentMaxVolume + 1
-
 
             if (
                 [string]::IsNullOrWhiteSpace(
                     $seedLabel
                 )
             ) {
-
                 $tailKeyword =
                     "{0} {1}" -f
                     $seriesTitle,
                     $targetVolume
             }
             else {
-
                 $tailKeyword =
                     "{0} {1} {2}" -f
                     $seriesTitle,
@@ -1447,13 +1246,10 @@ function Get-MangaSeries {
                     $seedLabel
             }
 
-
             Start-Sleep `
                 -Milliseconds $RequestDelayMilliseconds
 
-
             $searchRequestCount++
-
 
             $tailResponse =
                 Invoke-AmazonSearch `
@@ -1465,29 +1261,23 @@ function Get-MangaSeries {
                     -ItemCount 10 `
                     -ItemPage 1
 
-
             $tailItems =
                 @()
-
 
             if (
                 $tailResponse.searchResult -and
                 $tailResponse.searchResult.items
             ) {
-
                 $tailItems =
                     @(
                         $tailResponse.searchResult.items
                     )
             }
 
-
             $matchingItems =
                 @()
 
-
             foreach ($tailItem in $tailItems) {
-
                 if (
                     Test-MangaTailCandidate `
                         -Item $tailItem `
@@ -1496,12 +1286,10 @@ function Get-MangaSeries {
                         -SeedLabel $seedLabel `
                         -SeedAuthors $seedAuthors
                 ) {
-
                     $matchingItems +=
                         $tailItem
                 }
             }
-
 
             $selectedTail =
                 @(
@@ -1512,12 +1300,9 @@ function Get-MangaSeries {
                 ) |
                 Select-Object -First 1
 
-
             if (-not $selectedTail) {
-
                 $tailChecks +=
                     [PSCustomObject]@{
-
                         TargetVolume =
                             $targetVolume
 
@@ -1537,25 +1322,20 @@ function Get-MangaSeries {
                             ""
                     }
 
-
                 $tailStatus =
                     "NextVolumeNotFound"
-
 
                 break
             }
 
-
             $tailTitle =
                 $selectedTail.itemInfo.title.displayValue
-
 
             $tailAuthors =
                 @(
                     Get-MangaAuthorNames `
                         -Item $selectedTail
                 )
-
 
             $tailScore =
                 Get-MangaCandidateScore `
@@ -1566,10 +1346,8 @@ function Get-MangaSeries {
                     -SeedAuthors $seedAuthors `
                     -CandidateAuthors $tailAuthors
 
-
             $tailCandidate =
                 [PSCustomObject]@{
-
                     Volume =
                         [int]$targetVolume
 
@@ -1608,20 +1386,22 @@ function Get-MangaSeries {
                             Get-MangaPrice `
                                 -Item $selectedTail
                         )
-                }
 
+                    ImageURL =
+                        (
+                            Get-MangaImageUrl `
+                                -Item $selectedTail
+                        )
+                }
 
             $seriesIndex +=
                 $tailCandidate
 
-
             $searchItemMap[$selectedTail.asin] =
                 $selectedTail
 
-
             $tailChecks +=
                 [PSCustomObject]@{
-
                     TargetVolume =
                         $targetVolume
 
@@ -1641,23 +1421,19 @@ function Get-MangaSeries {
                         $tailTitle
                 }
 
-
             $currentMaxVolume =
                 $targetVolume
-
 
             $tailStatus =
                 "NextVolumeFound"
         }
     }
 
-
     $seriesIndex =
         @(
             $seriesIndex |
             Sort-Object Volume
         )
-
 
     # ======================================
     # Find missing KU metadata
@@ -1666,37 +1442,29 @@ function Get-MangaSeries {
     $fallbackAsins =
         @()
 
-
     foreach ($selected in $seriesIndex) {
-
         if (
             $selected.KUMetadataAvailable -eq
             $true
         ) {
-
             continue
         }
-
 
         if (
             $selected.ASIN -eq
             $seedASIN
         ) {
-
             continue
         }
-
 
         if (
             $fallbackAsins -notcontains
             $selected.ASIN
         ) {
-
             $fallbackAsins +=
                 $selected.ASIN
         }
     }
-
 
     # ======================================
     # Fallback GetItems
@@ -1705,19 +1473,16 @@ function Get-MangaSeries {
     $fallbackItemMap =
         @{}
 
-
     for (
         $offset = 0;
         $offset -lt $fallbackAsins.Count;
         $offset += 10
     ) {
-
         $endIndex =
             [Math]::Min(
                 $offset + 9,
                 $fallbackAsins.Count - 1
             )
-
 
         $batch =
             @(
@@ -1726,16 +1491,12 @@ function Get-MangaSeries {
                 ]
             )
 
-
         if ($offset -gt 0) {
-
             Start-Sleep `
                 -Milliseconds $RequestDelayMilliseconds
         }
 
-
         $getItemsRequestCount++
-
 
         $batchItems =
             @(
@@ -1746,14 +1507,11 @@ function Get-MangaSeries {
                     -AccessToken $AccessToken
             )
 
-
         foreach ($item in $batchItems) {
-
             $fallbackItemMap[$item.asin] =
                 $item
         }
     }
-
 
     # ======================================
     # Build final volume objects
@@ -1762,26 +1520,23 @@ function Get-MangaSeries {
     $finalVolumes =
         @()
 
-
     foreach ($selected in $seriesIndex) {
-
         $isKU =
             $selected.SearchItemsKU
-
 
         $price =
             $selected.SearchItemsPrice
 
+        $imageUrl =
+            $selected.ImageURL
 
         $metadataSource =
             "SearchItems"
-
 
         if (
             $selected.KUMetadataAvailable -eq
             $true
         ) {
-
             $metadataSource =
                 "SearchItems"
         }
@@ -1789,40 +1544,42 @@ function Get-MangaSeries {
             $selected.ASIN -eq
             $seedASIN
         ) {
-
             $seedKU =
                 Test-MangaKindleUnlimited `
                     -Item $seedItem
 
-
             if ($null -ne $seedKU) {
-
                 $isKU =
                     $seedKU
-
 
                 $metadataSource =
                     "SeedGetItems"
             }
             else {
-
                 $isKU =
                     $null
-
 
                 $metadataSource =
                     "Unknown"
             }
-
 
             if (
                 [string]::IsNullOrWhiteSpace(
                     $price
                 )
             ) {
-
                 $price =
                     Get-MangaPrice `
+                        -Item $seedItem
+            }
+
+            if (
+                [string]::IsNullOrWhiteSpace(
+                    $imageUrl
+                )
+            ) {
+                $imageUrl =
+                    Get-MangaImageUrl `
                         -Item $seedItem
             }
         }
@@ -1831,96 +1588,86 @@ function Get-MangaSeries {
                 $selected.ASIN
             )
         ) {
-
             $fallbackItem =
                 $fallbackItemMap[
                     $selected.ASIN
                 ]
 
-
             $fallbackKU =
                 Test-MangaKindleUnlimited `
                     -Item $fallbackItem
 
-
             if ($null -ne $fallbackKU) {
-
                 $isKU =
                     $fallbackKU
-
 
                 $metadataSource =
                     "GetItems"
             }
             else {
-
                 $isKU =
                     $null
-
 
                 $metadataSource =
                     "Unknown"
             }
-
 
             if (
                 [string]::IsNullOrWhiteSpace(
                     $price
                 )
             ) {
-
                 $price =
                     Get-MangaPrice `
                         -Item $fallbackItem
             }
+
+            if (
+                [string]::IsNullOrWhiteSpace(
+                    $imageUrl
+                )
+            ) {
+                $imageUrl =
+                    Get-MangaImageUrl `
+                        -Item $fallbackItem
+            }
         }
         else {
-
             $isKU =
                 $null
-
 
             $metadataSource =
                 "Unknown"
         }
 
-
         $kuStatus =
             "Unknown"
 
-
         if ($isKU -eq $true) {
-
             $kuStatus =
                 "KU"
         }
         elseif ($isKU -eq $false) {
-
             $kuStatus =
                 "NO"
         }
 
-
         $detailPageURL =
             ""
-
 
         if (
             $searchItemMap.ContainsKey(
                 $selected.ASIN
             )
         ) {
-
             $detailPageURL =
                 $searchItemMap[
                     $selected.ASIN
                 ].detailPageURL
         }
 
-
         $finalVolumes +=
             [PSCustomObject]@{
-
                 Volume =
                     [int]$selected.Volume
 
@@ -1932,6 +1679,9 @@ function Get-MangaSeries {
 
                 Price =
                     $price
+
+                ImageURL =
+                    $imageUrl
 
                 IsKindleUnlimited =
                     $isKU
@@ -1950,13 +1700,11 @@ function Get-MangaSeries {
             }
     }
 
-
     $finalVolumes =
         @(
             $finalVolumes |
             Sort-Object Volume
         )
-
 
     # ======================================
     # Final volume analysis
@@ -1971,33 +1719,26 @@ function Get-MangaSeries {
             Sort-Object -Unique
         )
 
-
     $maxDetectedVolume =
         $null
-
 
     $missingVolumes =
         @()
 
-
     $isContinuous =
         $false
 
-
     if ($detectedVolumes.Count -gt 0) {
-
         $maxDetectedVolume =
             (
                 $detectedVolumes |
                 Measure-Object -Maximum
             ).Maximum
 
-
         $expectedVolumes =
             @(
                 1..$maxDetectedVolume
             )
-
 
         $missingVolumes =
             @(
@@ -2008,14 +1749,11 @@ function Get-MangaSeries {
                 }
             )
 
-
         if ($missingVolumes.Count -eq 0) {
-
             $isContinuous =
                 $true
         }
     }
-
 
     $kuVolumes =
         @(
@@ -2030,7 +1768,6 @@ function Get-MangaSeries {
             Sort-Object -Unique
         )
 
-
     $nonKUVolumes =
         @(
             $finalVolumes |
@@ -2043,7 +1780,6 @@ function Get-MangaSeries {
             } |
             Sort-Object -Unique
         )
-
 
     $unknownKUVolumes =
         @(
@@ -2058,17 +1794,14 @@ function Get-MangaSeries {
             Sort-Object -Unique
         )
 
-
     $totalVolumeStatus =
         "Unknown"
-
 
     if (
         -not $isSearchTruncated -and
         $isContinuous -and
         $detectedVolumes.Count -gt 0
     ) {
-
         $totalVolumeStatus =
             "Confirmed"
     }
@@ -2078,7 +1811,6 @@ function Get-MangaSeries {
         $tailStatus -eq
         "NextVolumeNotFound"
     ) {
-
         $totalVolumeStatus =
             "StrongProbable"
     }
@@ -2086,21 +1818,17 @@ function Get-MangaSeries {
         $isSearchTruncated -and
         $isContinuous
     ) {
-
         $totalVolumeStatus =
             "Probable"
     }
 
-
     $isAllDetectedVolumesKU =
         $null
-
 
     if (
         $unknownKUVolumes.Count -eq 0 -and
         $detectedVolumes.Count -gt 0
     ) {
-
         $isAllDetectedVolumesKU =
             (
                 $kuVolumes.Count -eq
@@ -2108,18 +1836,11 @@ function Get-MangaSeries {
             )
     }
 
-
     $creatorsApiRequests =
         $searchRequestCount +
         $getItemsRequestCount
 
-
-    # ======================================
-    # Return service result
-    # ======================================
-
     return [PSCustomObject]@{
-
         SeedASIN =
             $seedASIN
 
@@ -2128,6 +1849,9 @@ function Get-MangaSeries {
 
         SeedVolume =
             $seedVolume
+
+        SeedImageURL =
+            $seedImageUrl
 
         SeriesTitle =
             $seriesTitle
