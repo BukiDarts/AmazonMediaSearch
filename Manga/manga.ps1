@@ -188,6 +188,12 @@ $kuCountText =
     )
 
 
+$limitedFreeSummaryText =
+    $window.FindName(
+        "LimitedFreeSummaryText"
+    )
+
+
 $unknownSummaryText =
     $window.FindName(
         "UnknownSummaryText"
@@ -416,6 +422,38 @@ function Get-KUSummaryText {
 
     return (
         "Kindle Unlimited：{0}巻" -f
+        $range
+    )
+}
+
+
+# ==========================================
+# Create limited-free summary display
+# ==========================================
+
+function Get-LimitedFreeSummaryText {
+
+    param(
+        $Result
+    )
+
+
+    if (
+        $null -eq $Result.LimitedFreeVolumeCount -or
+        $Result.LimitedFreeVolumeCount -eq 0
+    ) {
+
+        return "期間限定無料：対象なし"
+    }
+
+
+    $range =
+        ConvertTo-DisplayRange `
+            -Range $Result.LimitedFreeRanges
+
+
+    return (
+        "期間限定無料：{0}巻" -f
         $range
     )
 }
@@ -703,6 +741,10 @@ function Reset-MangaDisplay {
         ""
 
 
+    $limitedFreeSummaryText.Text =
+        "期間限定無料：-"
+
+
     $unknownSummaryText.Text =
         ""
 
@@ -857,6 +899,11 @@ function Invoke-MangaWindowSearch {
             )
 
 
+        $limitedFreeSummaryText.Text =
+            Get-LimitedFreeSummaryText `
+                -Result $result
+
+
         # ==================================
         # Unknown KU summary
         # ==================================
@@ -916,6 +963,28 @@ function Invoke-MangaWindowSearch {
             }
 
 
+            $limitedFreeDisplay =
+                "対象外"
+
+
+            if (
+                $volume.IsLimitedFree -eq
+                $true
+            ) {
+
+                $limitedFreeDisplay =
+                    "対象"
+            }
+            elseif (
+                $null -eq
+                $volume.IsLimitedFree
+            ) {
+
+                $limitedFreeDisplay =
+                    "不明"
+            }
+
+
             $rows +=
                 [PSCustomObject]@{
 
@@ -924,6 +993,12 @@ function Invoke-MangaWindowSearch {
 
                     KUDisplay =
                         $kuDisplay
+
+                    LimitedFreeDisplay =
+                        $limitedFreeDisplay
+
+                    IsLimitedFree =
+                        $volume.IsLimitedFree
 
                     Price =
                         $volume.Price

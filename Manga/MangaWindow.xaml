@@ -110,6 +110,7 @@
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
 
                     <TextBlock
@@ -145,8 +146,17 @@
                         Text=""/>
 
                     <TextBlock
-                        x:Name="UnknownSummaryText"
+                        x:Name="LimitedFreeSummaryText"
                         Grid.Row="4"
+                        Margin="0,8,0,0"
+                        FontSize="16"
+                        FontWeight="SemiBold"
+                        Foreground="#C62828"
+                        Text="期間限定無料：-"/>
+
+                    <TextBlock
+                        x:Name="UnknownSummaryText"
+                        Grid.Row="5"
                         Margin="0,6,0,0"
                         Foreground="#777777"
                         Text=""/>
@@ -191,9 +201,73 @@
                     Width="90"/>
 
                 <DataGridTextColumn
+                    Header="期間無料"
+                    Binding="{Binding LimitedFreeDisplay}"
+                    Width="90"/>
+
+                <DataGridTemplateColumn
                     Header="価格"
-                    Binding="{Binding Price}"
-                    Width="100"/>
+                    Width="130">
+
+                    <DataGridTemplateColumn.CellTemplate>
+
+                        <DataTemplate>
+
+                            <Grid>
+
+                                <TextBlock
+                                    x:Name="NormalPriceText"
+                                    VerticalAlignment="Center"
+                                    Text="{Binding Price}"/>
+
+                                <StackPanel
+                                    x:Name="LimitedFreePricePanel"
+                                    Orientation="Horizontal"
+                                    VerticalAlignment="Center"
+                                    Visibility="Collapsed">
+
+                                    <TextBlock
+                                        VerticalAlignment="Center"
+                                        Foreground="#777777"
+                                        Text="{Binding Price}"
+                                        TextDecorations="Strikethrough"/>
+
+                                    <TextBlock
+                                        Margin="8,0,0,0"
+                                        VerticalAlignment="Center"
+                                        FontWeight="Bold"
+                                        Foreground="#D32F2F"
+                                        Text="￥0"/>
+
+                                </StackPanel>
+
+                            </Grid>
+
+                            <DataTemplate.Triggers>
+
+                                <DataTrigger
+                                    Binding="{Binding IsLimitedFree}"
+                                    Value="True">
+
+                                    <Setter
+                                        TargetName="NormalPriceText"
+                                        Property="Visibility"
+                                        Value="Collapsed"/>
+
+                                    <Setter
+                                        TargetName="LimitedFreePricePanel"
+                                        Property="Visibility"
+                                        Value="Visible"/>
+
+                                </DataTrigger>
+
+                            </DataTemplate.Triggers>
+
+                        </DataTemplate>
+
+                    </DataGridTemplateColumn.CellTemplate>
+
+                </DataGridTemplateColumn>
 
                 <DataGridTextColumn
                     Header="タイトル"

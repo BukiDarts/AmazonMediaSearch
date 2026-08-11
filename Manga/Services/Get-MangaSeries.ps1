@@ -399,6 +399,37 @@ function Test-MangaKindleUnlimited {
 }
 
 
+
+function Test-MangaLimitedFree {
+
+    param(
+        $Item
+    )
+
+    if (
+        -not (
+            Test-MangaKUMetadataAvailable `
+                -Item $Item
+        )
+    ) {
+        return $null
+    }
+
+    $browseNodeJson =
+        $Item.browseNodeInfo |
+        ConvertTo-Json -Depth 30
+
+    if (
+        $browseNodeJson -match
+        '\u671F\u9593\u9650\u5B9A\u7121\u6599'
+    ) {
+        return $true
+    }
+
+    return $false
+}
+
+
 function ConvertTo-MangaVolumeRanges {
 
     param(
@@ -1159,6 +1190,12 @@ function Get-MangaSeries {
                             -Item $item
                     )
 
+                SearchItemsLimitedFree =
+                    (
+                        Test-MangaLimitedFree `
+                            -Item $item
+                    )
+
                 SearchItemsPrice =
                     (
                         Get-MangaPrice `
@@ -1430,6 +1467,12 @@ function Get-MangaSeries {
                                 -Item $selectedTail
                         )
 
+                    SearchItemsLimitedFree =
+                        (
+                            Test-MangaLimitedFree `
+                                -Item $selectedTail
+                        )
+
                     SearchItemsPrice =
                         (
                             Get-MangaPrice `
@@ -1572,6 +1615,12 @@ function Get-MangaSeries {
         $isKU =
             $selected.SearchItemsKU
 
+        $isLimitedFree =
+            $selected.SearchItemsLimitedFree
+
+        $limitedFreeMetadataSource =
+            "SearchItems"
+
         $price =
             $selected.SearchItemsPrice
 
@@ -1608,6 +1657,22 @@ function Get-MangaSeries {
                     $null
 
                 $metadataSource =
+                    "Unknown"
+            }
+
+            $seedLimitedFree =
+                Test-MangaLimitedFree `
+                    -Item $seedItem
+
+            $isLimitedFree =
+                $seedLimitedFree
+
+            if ($null -ne $seedLimitedFree) {
+                $limitedFreeMetadataSource =
+                    "SeedGetItems"
+            }
+            else {
+                $limitedFreeMetadataSource =
                     "Unknown"
             }
 
@@ -1660,6 +1725,22 @@ function Get-MangaSeries {
                     "Unknown"
             }
 
+            $fallbackLimitedFree =
+                Test-MangaLimitedFree `
+                    -Item $fallbackItem
+
+            $isLimitedFree =
+                $fallbackLimitedFree
+
+            if ($null -ne $fallbackLimitedFree) {
+                $limitedFreeMetadataSource =
+                    "GetItems"
+            }
+            else {
+                $limitedFreeMetadataSource =
+                    "Unknown"
+            }
+
             if (
                 [string]::IsNullOrWhiteSpace(
                     $price
@@ -1685,6 +1766,12 @@ function Get-MangaSeries {
                 $null
 
             $metadataSource =
+                "Unknown"
+
+            $isLimitedFree =
+                $null
+
+            $limitedFreeMetadataSource =
                 "Unknown"
         }
 
@@ -1739,6 +1826,12 @@ function Get-MangaSeries {
 
                 KUMetadataSource =
                     $metadataSource
+
+                IsLimitedFree =
+                    $isLimitedFree
+
+                LimitedFreeMetadataSource =
+                    $limitedFreeMetadataSource
 
                 CandidateScore =
                     $selected.Score
@@ -1835,6 +1928,32 @@ function Get-MangaSeries {
             Where-Object {
                 $null -eq
                 $_.IsKindleUnlimited
+            } |
+            ForEach-Object {
+                $_.Volume
+            } |
+            Sort-Object -Unique
+        )
+
+    $limitedFreeVolumes =
+        @(
+            $finalVolumes |
+            Where-Object {
+                $_.IsLimitedFree -eq
+                $true
+            } |
+            ForEach-Object {
+                $_.Volume
+            } |
+            Sort-Object -Unique
+        )
+
+    $unknownLimitedFreeVolumes =
+        @(
+            $finalVolumes |
+            Where-Object {
+                $null -eq
+                $_.IsLimitedFree
             } |
             ForEach-Object {
                 $_.Volume
@@ -1978,6 +2097,27 @@ function Get-MangaSeries {
 
         IsAllDetectedVolumesKindleUnlimited =
             $isAllDetectedVolumesKU
+
+        LimitedFreeVolumeCount =
+            $limitedFreeVolumes.Count
+
+        LimitedFreeVolumes =
+            @($limitedFreeVolumes)
+
+        LimitedFreeRanges =
+            (
+                ConvertTo-MangaVolumeRanges `
+                    -Volumes $limitedFreeVolumes
+            )
+
+        UnknownLimitedFreeVolumes =
+            @($unknownLimitedFreeVolumes)
+
+        UnknownLimitedFreeRanges =
+            (
+                ConvertTo-MangaVolumeRanges `
+                    -Volumes $unknownLimitedFreeVolumes
+            )
 
         TailStatus =
             $tailStatus
