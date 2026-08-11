@@ -24,6 +24,12 @@ $xamlPath =
     Join-Path $PSScriptRoot "MangaWindow.xaml"
 
 
+$imageCacheDirectory =
+    Join-Path `
+        $projectRoot `
+        "Cache\Manga\Images"
+
+
 # ==========================================
 # Load functions
 # ==========================================
@@ -86,22 +92,20 @@ catch {
 
 
 # ==========================================
-# Authenticate once
+# Create image cache directory
 # ==========================================
 
-try {
-
-    $accessToken =
-        Get-AmazonAccessToken `
-            -Config $config
-}
-catch {
-
-    [System.Windows.MessageBox]::Show(
-        "Authentication failed."
+if (
+    -not (
+        Test-Path $imageCacheDirectory
     )
+) {
 
-    exit
+    New-Item `
+        -ItemType Directory `
+        -Path $imageCacheDirectory `
+        -Force |
+    Out-Null
 }
 
 
@@ -418,12 +422,88 @@ function Get-KUSummaryText {
 
 
 # ==========================================
+# Load bitmap from local file
+# ==========================================
+
+function Get-MangaBitmapFromFile {
+
+    param(
+        [Parameter(Mandatory)]
+        [string]$Path
+    )
+
+
+    if (
+        -not (
+            Test-Path $Path
+        )
+    ) {
+
+        return $null
+    }
+
+
+    try {
+
+        $bytes =
+            [System.IO.File]::ReadAllBytes(
+                $Path
+            )
+
+
+        $memoryStream =
+            New-Object `
+                System.IO.MemoryStream `
+                -ArgumentList @(,$bytes)
+
+
+        try {
+
+            $bitmap =
+                New-Object `
+                    System.Windows.Media.Imaging.BitmapImage
+
+
+            $bitmap.BeginInit()
+
+
+            $bitmap.CacheOption =
+                [System.Windows.Media.Imaging.BitmapCacheOption]::OnLoad
+
+
+            $bitmap.StreamSource =
+                $memoryStream
+
+
+            $bitmap.EndInit()
+
+
+            $bitmap.Freeze()
+
+
+            return $bitmap
+        }
+        finally {
+
+            $memoryStream.Dispose()
+        }
+    }
+    catch {
+
+        return $null
+    }
+}
+
+
+# ==========================================
 # Set cover image
 # ==========================================
 
 function Set-MangaCoverImage {
 
     param(
+        [string]$ASIN,
+
         [string]$ImageUrl
     )
 
@@ -431,6 +511,58 @@ function Set-MangaCoverImage {
     $coverImage.Source =
         $null
 
+
+    if (
+        [string]::IsNullOrWhiteSpace(
+            $ASIN
+        )
+    ) {
+
+        return
+    }
+
+
+    $imageCachePath =
+        Join-Path `
+            $imageCacheDirectory `
+            (
+                "{0}.jpg" -f
+                $ASIN
+            )
+
+
+    # ======================================
+    # Use local image cache first
+    # ======================================
+
+    if (
+        Test-Path $imageCachePath
+    ) {
+
+        $cachedBitmap =
+            Get-MangaBitmapFromFile `
+                -Path $imageCachePath
+
+
+        if ($cachedBitmap) {
+
+            $coverImage.Source =
+                $cachedBitmap
+
+            return
+        }
+
+
+        Remove-Item `
+            $imageCachePath `
+            -Force `
+            -ErrorAction SilentlyContinue
+    }
+
+
+    # ======================================
+    # Download only when local image missing
+    # ======================================
 
     if (
         [string]::IsNullOrWhiteSpace(
@@ -443,10 +575,6 @@ function Set-MangaCoverImage {
 
 
     $webClient =
-        $null
-
-
-    $memoryStream =
         $null
 
 
@@ -478,41 +606,65 @@ function Set-MangaCoverImage {
         }
 
 
+        try {
+
+            [System.IO.File]::WriteAllBytes(
+                $imageCachePath,
+                $imageBytes
+            )
+        }
+        catch {
+
+            Write-Host (
+                "Failed to cache cover image: {0}" -f
+                $_.Exception.Message
+            )
+        }
+
+
         $memoryStream =
             New-Object `
                 System.IO.MemoryStream `
                 -ArgumentList @(,$imageBytes)
 
 
-        $bitmap =
-            New-Object `
-                System.Windows.Media.Imaging.BitmapImage
+        try {
+
+            $bitmap =
+                New-Object `
+                    System.Windows.Media.Imaging.BitmapImage
 
 
-        $bitmap.BeginInit()
+            $bitmap.BeginInit()
 
 
-        $bitmap.CacheOption =
-            [System.Windows.Media.Imaging.BitmapCacheOption]::OnLoad
+            $bitmap.CacheOption =
+                [System.Windows.Media.Imaging.BitmapCacheOption]::OnLoad
 
 
-        $bitmap.StreamSource =
-            $memoryStream
+            $bitmap.StreamSource =
+                $memoryStream
 
 
-        $bitmap.EndInit()
+            $bitmap.EndInit()
 
 
-        $bitmap.Freeze()
+            $bitmap.Freeze()
 
 
-        $coverImage.Source =
-            $bitmap
+            $coverImage.Source =
+                $bitmap
+        }
+        finally {
+
+            $memoryStream.Dispose()
+        }
     }
     catch {
 
         $coverImage.Source =
             $null
+
 
         Write-Host (
             "Failed to load cover image: {0}" -f
@@ -520,12 +672,6 @@ function Set-MangaCoverImage {
         )
     }
     finally {
-
-        if ($memoryStream) {
-
-            $memoryStream.Dispose()
-        }
-
 
         if ($webClient) {
 
@@ -663,7 +809,6 @@ function Invoke-MangaWindowSearch {
                 Get-MangaSeriesCached `
                     -SeedASIN $asin `
                     -Config $config `
-                    -AccessToken $accessToken `
                     -CacheHours 6 `
                     -ForceRefresh
         }
@@ -673,7 +818,6 @@ function Invoke-MangaWindowSearch {
                 Get-MangaSeriesCached `
                     -SeedASIN $asin `
                     -Config $config `
-                    -AccessToken $accessToken `
                     -CacheHours 6
         }
 
@@ -683,6 +827,7 @@ function Invoke-MangaWindowSearch {
         # ==================================
 
         Set-MangaCoverImage `
+            -ASIN $asin `
             -ImageUrl $result.SeedImageURL
 
 
@@ -813,18 +958,18 @@ function Invoke-MangaWindowSearch {
 
             $requestSummaryText.Text =
                 (
-                    "Cache: Hit / 今回のAPI呼び出し: 0 / キャッシュ作成時API: {0}" -f
-                    $result.CreatorsApiRequests
+                    "Cache: Hit / OAuth: 0 / Creators API: 0 / 通信なし"
                 )
         }
         else {
 
             $requestSummaryText.Text =
                 (
-                    "Cache: Miss / SearchItems: {0} / GetItems: {1} / 今回のAPI呼び出し: {2}" -f
+                    "Cache: Miss / OAuth: {0} / SearchItems: {1} / GetItems: {2} / Creators API: {3}" -f
+                    $result.CurrentOAuthRequests,
                     $result.SearchItemsRequests,
                     $result.GetItemsRequests,
-                    $result.CreatorsApiRequests
+                    $result.CurrentCreatorsApiRequests
                 )
         }
 
@@ -840,7 +985,7 @@ function Invoke-MangaWindowSearch {
 
             $statusText.Text =
                 (
-                    "{0}巻をキャッシュから読み込みました。" -f
+                    "{0}巻をローカルキャッシュから読み込みました。" -f
                     $result.DetectedVolumeCount
                 )
         }

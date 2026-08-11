@@ -1,18 +1,4 @@
-﻿# ==========================================
-# Manga Series Cache Wrapper
-# ==========================================
-#
-# Purpose:
-# - Cache Get-MangaSeries results by seed ASIN
-# - Avoid repeated Creators API requests
-# - Refresh cache after TTL expires
-# - Allow forced refresh when required
-#
-# The underlying Get-MangaSeries service is not modified.
-# ==========================================
-
-
-function Get-MangaSeriesCached {
+﻿function Get-MangaSeriesCached {
 
     param(
         [Parameter(Mandatory)]
@@ -21,8 +7,7 @@ function Get-MangaSeriesCached {
         [Parameter(Mandatory)]
         $Config,
 
-        [Parameter(Mandatory)]
-        [string]$AccessToken,
+        [string]$AccessToken = "",
 
         [string]$CacheDirectory = "",
 
@@ -41,7 +26,6 @@ function Get-MangaSeriesCached {
             $seedASIN
         )
     ) {
-
         throw "Seed ASIN is empty."
     }
 
@@ -83,10 +67,6 @@ function Get-MangaSeriesCached {
     }
 
 
-    # ======================================
-    # Cache file path
-    # ======================================
-
     $cachePath =
         Join-Path `
             $CacheDirectory `
@@ -112,7 +92,9 @@ function Get-MangaSeriesCached {
 
 
             $cacheAge =
-                (Get-Date) -
+                (
+                    Get-Date
+                ) -
                 $cacheFile.LastWriteTime
 
 
@@ -121,54 +103,91 @@ function Get-MangaSeriesCached {
                 $CacheHours
             ) {
 
-                $cachedObject =
+                $cachedResult =
                     Get-Content `
                         $cachePath `
                         -Raw |
                     ConvertFrom-Json
 
 
-                if ($cachedObject) {
-
-                    $cachedObject |
-                        Add-Member `
-                            -NotePropertyName CacheStatus `
-                            -NotePropertyValue "Hit" `
-                            -Force
+                $cachedResult |
+                    Add-Member `
+                        -NotePropertyName "CacheStatus" `
+                        -NotePropertyValue "Hit" `
+                        -Force
 
 
-                    $cachedObject |
-                        Add-Member `
-                            -NotePropertyName CachePath `
-                            -NotePropertyValue $cachePath `
-                            -Force
+                $cachedResult |
+                    Add-Member `
+                        -NotePropertyName "CachePath" `
+                        -NotePropertyValue $cachePath `
+                        -Force
 
 
-                    $cachedObject |
-                        Add-Member `
-                            -NotePropertyName CacheAgeMinutes `
-                            -NotePropertyValue (
-                                [Math]::Round(
-                                    $cacheAge.TotalMinutes,
-                                    1
-                                )
-                            ) `
-                            -Force
+                $cachedResult |
+                    Add-Member `
+                        -NotePropertyName "CacheAgeMinutes" `
+                        -NotePropertyValue (
+                            [Math]::Round(
+                                $cacheAge.TotalMinutes,
+                                1
+                            )
+                        ) `
+                        -Force
 
 
-                    return $cachedObject
-                }
+                $cachedResult |
+                    Add-Member `
+                        -NotePropertyName "CurrentOAuthRequests" `
+                        -NotePropertyValue 0 `
+                        -Force
+
+
+                $cachedResult |
+                    Add-Member `
+                        -NotePropertyName "CurrentCreatorsApiRequests" `
+                        -NotePropertyValue 0 `
+                        -Force
+
+
+                return $cachedResult
             }
         }
         catch {
 
-            Write-Host "Cache read failed. Refreshing from API."
+            Write-Host (
+                "Failed to read manga cache: {0}" -f
+                $_.Exception.Message
+            )
         }
     }
 
 
     # ======================================
-    # Call original service
+    # Authenticate only on cache miss
+    # ======================================
+
+    $oauthRequests =
+        0
+
+
+    if (
+        [string]::IsNullOrWhiteSpace(
+            $AccessToken
+        )
+    ) {
+
+        $oauthRequests++
+
+
+        $AccessToken =
+            Get-AmazonAccessToken `
+                -Config $Config
+    }
+
+
+    # ======================================
+    # Get fresh manga result
     # ======================================
 
     $result =
@@ -178,34 +197,42 @@ function Get-MangaSeriesCached {
             -AccessToken $AccessToken
 
 
-    if (-not $result) {
-
-        throw "Manga service returned no result."
-    }
-
-
     # ======================================
     # Add cache metadata
     # ======================================
 
     $result |
         Add-Member `
-            -NotePropertyName CacheStatus `
+            -NotePropertyName "CacheStatus" `
             -NotePropertyValue "Miss" `
             -Force
 
 
     $result |
         Add-Member `
-            -NotePropertyName CachePath `
+            -NotePropertyName "CachePath" `
             -NotePropertyValue $cachePath `
             -Force
 
 
     $result |
         Add-Member `
-            -NotePropertyName CacheAgeMinutes `
+            -NotePropertyName "CacheAgeMinutes" `
             -NotePropertyValue 0 `
+            -Force
+
+
+    $result |
+        Add-Member `
+            -NotePropertyName "CurrentOAuthRequests" `
+            -NotePropertyValue $oauthRequests `
+            -Force
+
+
+    $result |
+        Add-Member `
+            -NotePropertyName "CurrentCreatorsApiRequests" `
+            -NotePropertyValue $result.CreatorsApiRequests `
             -Force
 
 
@@ -221,20 +248,23 @@ function Get-MangaSeriesCached {
                 -ArgumentList $true
 
 
-        $cacheJson =
+        $json =
             $result |
             ConvertTo-Json -Depth 30
 
 
         [System.IO.File]::WriteAllText(
             $cachePath,
-            $cacheJson,
+            $json,
             $utf8Bom
         )
     }
     catch {
 
-        Write-Host "Cache write failed."
+        Write-Host (
+            "Failed to write manga cache: {0}" -f
+            $_.Exception.Message
+        )
     }
 
 
