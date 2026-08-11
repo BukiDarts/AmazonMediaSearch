@@ -88,6 +88,15 @@ function Get-MangaVolumeNumber {
         return [int]$Matches[1]
     }
 
+    # Support titles where the volume number is directly
+    # attached to the series title, such as "Complete Edition1".
+    if (
+        $normalizedTitle -match
+        '(?<!\d)(\d+)\s*$'
+    ) {
+        return [int]$Matches[1]
+    }
+
     return $null
 }
 
@@ -143,6 +152,18 @@ function Get-MangaSeriesTitle {
     if (
         $normalizedTitle -match
         '^(.*?)\s+(\d+)\s*$'
+    ) {
+        return (
+            ConvertTo-MangaNormalizedText `
+                -Text $Matches[1]
+        )
+    }
+
+    # Support titles where the volume number is directly
+    # attached to the series title.
+    if (
+        $normalizedTitle -match
+        '^(.*?\D)(\d+)\s*$'
     ) {
         return (
             ConvertTo-MangaNormalizedText `
@@ -518,6 +539,12 @@ function Test-MangaDirectVolumeTitle {
                 '\s*' +
                 $Volume +
                 '\s*\u5DFB\s*(?:\([^()]*\))*\s*$'
+            ),
+            (
+                '^' +
+                $escapedSeries +
+                $Volume +
+                '\s*(?:\([^()]*\))*\s*$'
             )
         )
 
