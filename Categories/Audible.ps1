@@ -49,6 +49,12 @@
 
         $response =
             Invoke-AmazonSearch @searchParams
+            
+        # Wait before requesting the next page
+        if ($page -lt 10) {
+
+            Start-Sleep -Milliseconds 1100
+        }
 
         $pageItems =
             @($response.searchResult.items)

@@ -20,7 +20,9 @@ function Invoke-AmazonSearch {
 
         [int]$ItemPage = 1,
 
-        [string]$SortBy = ""
+        [string]$SortBy = "",
+
+        [int]$MaxRetries = 3
     )
 
     $searchBody = @{
@@ -58,9 +60,78 @@ function Invoke-AmazonSearch {
         Body        = $searchBytes
     }
 
-    $webResponse =
-        Invoke-WebRequest @searchParameters -UseBasicParsing
 
+    # ======================================
+    # Request with retry
+    # ======================================
+    $attempt = 0
+
+    while ($true) {
+
+        try {
+
+            $webResponse =
+                Invoke-WebRequest `
+                    @searchParameters `
+                    -UseBasicParsing
+
+            break
+        }
+        catch {
+
+            $attempt++
+
+            $statusCode = $null
+
+            if ($_.Exception.Response) {
+
+                try {
+
+                    $statusCode =
+                        [int]$_.Exception.Response.StatusCode
+
+                }
+                catch {
+
+                    $statusCode =
+                        $null
+                }
+            }
+
+
+            # Retry only for rate limiting
+            if (
+                $statusCode -eq 429 -and
+                $attempt -le $MaxRetries
+            ) {
+
+                # Exponential backoff:
+                # 1 sec, 2 sec, 4 sec
+                $waitSeconds =
+                    [math]::Pow(2, $attempt - 1)
+
+                Write-Host (
+                    "Rate limited. Retry {0}/{1} after {2} second(s)." -f
+                    $attempt,
+                    $MaxRetries,
+                    $waitSeconds
+                )
+
+                Start-Sleep `
+                    -Seconds $waitSeconds
+
+                continue
+            }
+
+
+            throw
+        }
+    }
+
+
+    # ======================================
+    # Decode response
+    # ======================================
     $responseBytes =
         $webResponse.RawContentStream.ToArray()
 
