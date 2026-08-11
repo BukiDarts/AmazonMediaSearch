@@ -20,6 +20,9 @@ Add-Type -AssemblyName PresentationFramework
 $script:booksAllResults = @()
 $script:booksTotalResultCount = 0
 
+$script:kindleAllResults = @()
+$script:kindleTotalResultCount = 0
+
 $script:audibleAllResults = @()
 
 
@@ -53,7 +56,6 @@ try {
 
     $accessToken =
         Get-AmazonAccessToken -Config $config
-
 }
 catch {
 
@@ -106,20 +108,28 @@ $searchButton =
 $booksGrid =
     $window.FindName("BooksGrid")
 
+$kindleGrid =
+    $window.FindName("KindleGrid")
+
 $resultGrid =
     $window.FindName("ResultGrid")
 
 $audibleGrid =
     $window.FindName("AudibleGrid")
 
+
 $booksGridBorder =
     $window.FindName("BooksGridBorder")
+
+$kindleGridBorder =
+    $window.FindName("KindleGridBorder")
 
 $resultGridBorder =
     $window.FindName("ResultGridBorder")
 
 $audibleGridBorder =
     $window.FindName("AudibleGridBorder")
+
 
 $statusText =
     $window.FindName("StatusText")
@@ -181,6 +191,7 @@ function Add-AmazonButtonHandler {
 
 
 Add-AmazonButtonHandler -Grid $booksGrid
+Add-AmazonButtonHandler -Grid $kindleGrid
 Add-AmazonButtonHandler -Grid $resultGrid
 Add-AmazonButtonHandler -Grid $audibleGrid
 
@@ -198,6 +209,9 @@ function Set-CategoryUI {
 
 
     $booksGridBorder.Visibility =
+        [System.Windows.Visibility]::Collapsed
+
+    $kindleGridBorder.Visibility =
         [System.Windows.Visibility]::Collapsed
 
     $resultGridBorder.Visibility =
@@ -233,7 +247,13 @@ function Set-CategoryUI {
 
         "Kindle" {
 
-            $resultGridBorder.Visibility =
+            $kindleGridBorder.Visibility =
+                [System.Windows.Visibility]::Visible
+
+            $sortBox.Visibility =
+                [System.Windows.Visibility]::Visible
+
+            $filterBox.Visibility =
                 [System.Windows.Visibility]::Visible
         }
 
@@ -274,15 +294,6 @@ function Apply-BooksFilter {
 
     $totalResultCount =
         $script:booksTotalResultCount
-
-
-    if (-not $filterBox.SelectedItem) {
-
-        $booksGrid.ItemsSource =
-            $allResults
-
-        return
-    }
 
 
     $filter =
@@ -327,16 +338,9 @@ function Apply-BooksFilter {
         $filteredResults
 
 
-    # ======================================
-    # Status
-    # ======================================
-
     if ($filter -eq "All") {
 
-        if (
-            $totalResultCount -gt
-            $allResults.Count
-        ) {
+        if ($totalResultCount -gt $allResults.Count) {
 
             $statusText.Text =
                 "Books / $($allResults.Count) of $totalResultCount results"
@@ -349,10 +353,7 @@ function Apply-BooksFilter {
     }
     else {
 
-        if (
-            $totalResultCount -gt
-            $allResults.Count
-        ) {
+        if ($totalResultCount -gt $allResults.Count) {
 
             $statusText.Text =
                 "Books / $($filteredResults.Count) filtered / $($allResults.Count) of $totalResultCount retrieved"
@@ -367,6 +368,90 @@ function Apply-BooksFilter {
 
 
 # ==========================================
+# Kindle filter
+# ==========================================
+
+function Apply-KindleFilter {
+
+    $allResults =
+        @($script:kindleAllResults)
+
+    $totalResultCount =
+        $script:kindleTotalResultCount
+
+
+    $filter =
+        $filterBox.SelectedItem.Tag.ToString()
+
+
+    switch ($filter) {
+
+        "Released" {
+
+            $filteredResults =
+                @(
+                    $allResults |
+                    Where-Object {
+                        $_.AvailabilityType -eq "IN_STOCK"
+                    }
+                )
+        }
+
+
+        "Preorder" {
+
+            $filteredResults =
+                @(
+                    $allResults |
+                    Where-Object {
+                        $_.AvailabilityType -eq "PREORDER"
+                    }
+                )
+        }
+
+
+        default {
+
+            $filteredResults =
+                $allResults
+        }
+    }
+
+
+    $kindleGrid.ItemsSource =
+        $filteredResults
+
+
+    if ($filter -eq "All") {
+
+        if ($totalResultCount -gt $allResults.Count) {
+
+            $statusText.Text =
+                "Kindle / $($allResults.Count) of $totalResultCount results"
+        }
+        else {
+
+            $statusText.Text =
+                "Kindle / $($allResults.Count) results"
+        }
+    }
+    else {
+
+        if ($totalResultCount -gt $allResults.Count) {
+
+            $statusText.Text =
+                "Kindle / $($filteredResults.Count) filtered / $($allResults.Count) of $totalResultCount retrieved"
+        }
+        else {
+
+            $statusText.Text =
+                "Kindle / $($filteredResults.Count) of $($allResults.Count) results"
+        }
+    }
+}
+
+
+# ==========================================
 # Audible filter
 # ==========================================
 
@@ -374,14 +459,6 @@ function Apply-AudibleFilter {
 
     $allResults =
         @($script:audibleAllResults)
-
-    if (-not $filterBox.SelectedItem) {
-
-        $audibleGrid.ItemsSource =
-            $allResults
-
-        return
-    }
 
 
     $filter =
@@ -441,7 +518,7 @@ function Apply-AudibleFilter {
     if ($filter -eq "All") {
 
         $statusText.Text =
-            "Audible / $($filteredResults.Count) results"
+            "Audible / $($allResults.Count) results"
     }
     else {
 
@@ -459,6 +536,7 @@ function Start-AmazonSearch {
 
     $keyword =
         $searchBox.Text.Trim()
+
 
     if ([string]::IsNullOrWhiteSpace($keyword)) {
 
@@ -488,9 +566,7 @@ function Start-AmazonSearch {
         switch ($selectedCategory) {
 
 
-            # ==================================
             # Books
-            # ==================================
             "Books" {
 
                 $sortBy =
@@ -503,17 +579,19 @@ function Start-AmazonSearch {
                     SortBy      = $sortBy
                 }
 
-
-                $bookSearchResult =
+                $searchResult =
                     Search-Books @searchParams
 
 
                 $script:booksAllResults =
-                    @($bookSearchResult.Items)
+                    @($searchResult.Items)
 
                 $script:booksTotalResultCount =
-                    [int]$bookSearchResult.TotalResultCount
+                    [int]$searchResult.TotalResultCount
 
+
+                $kindleGrid.ItemsSource =
+                    $null
 
                 $resultGrid.ItemsSource =
                     $null
@@ -526,37 +604,45 @@ function Start-AmazonSearch {
             }
 
 
-            # ==================================
             # Kindle
-            # ==================================
             "Kindle" {
+
+                $sortBy =
+                    $sortBox.SelectedItem.Tag.ToString()
 
                 $searchParams = @{
                     Keyword     = $keyword
                     Config      = $config
                     AccessToken = $accessToken
+                    SortBy      = $sortBy
                 }
 
-                $results =
+                $searchResult =
                     Search-Kindle @searchParams
 
-                $resultGrid.ItemsSource =
-                    $results
+
+                $script:kindleAllResults =
+                    @($searchResult.Items)
+
+                $script:kindleTotalResultCount =
+                    [int]$searchResult.TotalResultCount
+
 
                 $booksGrid.ItemsSource =
+                    $null
+
+                $resultGrid.ItemsSource =
                     $null
 
                 $audibleGrid.ItemsSource =
                     $null
 
-                $statusText.Text =
-                    "Kindle / $($results.Count) results"
+
+                Apply-KindleFilter
             }
 
 
-            # ==================================
             # Movies
-            # ==================================
             "Movies" {
 
                 $searchParams = @{
@@ -568,23 +654,26 @@ function Start-AmazonSearch {
                 $results =
                     Search-Movies @searchParams
 
+
                 $resultGrid.ItemsSource =
                     $results
 
                 $booksGrid.ItemsSource =
                     $null
 
+                $kindleGrid.ItemsSource =
+                    $null
+
                 $audibleGrid.ItemsSource =
                     $null
+
 
                 $statusText.Text =
                     "Movies / $($results.Count) results"
             }
 
 
-            # ==================================
             # Audible
-            # ==================================
             "Audible" {
 
                 $sortBy =
@@ -597,29 +686,26 @@ function Start-AmazonSearch {
                     SortBy      = $sortBy
                 }
 
+
                 $results =
                     Search-Audible @searchParams
+
 
                 $script:audibleAllResults =
                     @($results)
 
+
                 $booksGrid.ItemsSource =
+                    $null
+
+                $kindleGrid.ItemsSource =
                     $null
 
                 $resultGrid.ItemsSource =
                     $null
 
+
                 Apply-AudibleFilter
-            }
-
-
-            default {
-
-                $results =
-                    @()
-
-                $statusText.Text =
-                    "0 results"
             }
         }
     }
@@ -668,6 +754,7 @@ $filterBox.Add_SelectionChanged({
         return
     }
 
+
     $selectedCategory =
         $categoryBox.SelectedItem.Content.ToString()
 
@@ -677,6 +764,12 @@ $filterBox.Add_SelectionChanged({
         "Books" {
 
             Apply-BooksFilter
+        }
+
+
+        "Kindle" {
+
+            Apply-KindleFilter
         }
 
 
@@ -695,7 +788,6 @@ $filterBox.Add_SelectionChanged({
 $searchButton.Add_Click({
 
     Start-AmazonSearch
-
 })
 
 

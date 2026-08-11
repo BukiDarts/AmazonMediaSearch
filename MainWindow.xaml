@@ -19,7 +19,6 @@
         </Grid.RowDefinitions>
 
 
-        <!-- Header -->
         <StackPanel
             Grid.Row="0"
             Margin="0,0,0,20">
@@ -39,7 +38,6 @@
         </StackPanel>
 
 
-        <!-- Search controls -->
         <Border
             Grid.Row="1"
             Background="White"
@@ -93,7 +91,6 @@
                     Margin="0,0,10,0"
                     FontSize="13"
                     SelectedIndex="0"
-                    Visibility="Visible"
                     VerticalContentAlignment="Center">
 
                     <ComboBoxItem
@@ -123,7 +120,6 @@
                     Margin="0,0,10,0"
                     FontSize="13"
                     SelectedIndex="0"
-                    Visibility="Visible"
                     VerticalContentAlignment="Center">
 
                     <ComboBoxItem
@@ -161,7 +157,6 @@
         </Border>
 
 
-        <!-- Result header -->
         <Grid
             Grid.Row="2"
             Margin="0,0,0,8">
@@ -190,7 +185,6 @@
         </Grid>
 
 
-        <!-- Result area -->
         <Grid Grid.Row="3">
 
 
@@ -199,8 +193,7 @@
                 x:Name="BooksGridBorder"
                 Background="White"
                 CornerRadius="8"
-                Padding="1"
-                Visibility="Visible">
+                Padding="1">
 
                 <DataGrid
                     x:Name="BooksGrid"
@@ -217,29 +210,21 @@
 
                     <DataGrid.Columns>
 
-
-                        <!-- Cover -->
                         <DataGridTemplateColumn Width="100">
-
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
-
                                     <Image
                                         Source="{Binding ImageURL}"
                                         Width="80"
                                         Height="115"
                                         Stretch="Uniform"
                                         Margin="8" />
-
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellTemplate>
-
                         </DataGridTemplateColumn>
 
 
-                        <!-- Book details -->
                         <DataGridTemplateColumn Width="*">
-
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
 
@@ -291,7 +276,6 @@
 
                                             <TextBlock
                                                 Text="  ・  "
-                                                FontSize="12"
                                                 Foreground="#999999" />
 
                                             <TextBlock
@@ -301,7 +285,6 @@
 
                                             <TextBlock
                                                 Text="  ・  ASIN: "
-                                                FontSize="12"
                                                 Foreground="#999999" />
 
                                             <TextBlock
@@ -317,42 +300,13 @@
                                             Orientation="Horizontal"
                                             Margin="0,4,0,0">
 
-                                            <StackPanel.Style>
-
-                                                <Style TargetType="StackPanel">
-
-                                                    <Setter
-                                                        Property="Visibility"
-                                                        Value="Visible" />
-
-                                                    <Style.Triggers>
-
-                                                        <DataTrigger
-                                                            Binding="{Binding PriceStatus}"
-                                                            Value="">
-
-                                                            <Setter
-                                                                Property="Visibility"
-                                                                Value="Collapsed" />
-
-                                                        </DataTrigger>
-
-                                                    </Style.Triggers>
-
-                                                </Style>
-
-                                            </StackPanel.Style>
-
-
                                             <TextBlock
                                                 Text="{Binding PriceStatus}"
                                                 FontSize="13"
                                                 FontWeight="SemiBold"
                                                 Foreground="#333333" />
 
-                                            <TextBlock
-                                                Text="  "
-                                                FontSize="13" />
+                                            <TextBlock Text="  "/>
 
                                             <TextBlock
                                                 Text="{Binding Price}"
@@ -365,13 +319,10 @@
 
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellTemplate>
-
                         </DataGridTemplateColumn>
 
 
-                        <!-- Amazon -->
                         <DataGridTemplateColumn Width="150">
-
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
 
@@ -386,7 +337,6 @@
 
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellTemplate>
-
                         </DataGridTemplateColumn>
 
                     </DataGrid.Columns>
@@ -396,7 +346,168 @@
             </Border>
 
 
-            <!-- Kindle / Movies -->
+            <!-- Kindle -->
+            <Border
+                x:Name="KindleGridBorder"
+                Background="White"
+                CornerRadius="8"
+                Padding="1"
+                Visibility="Collapsed">
+
+                <DataGrid
+                    x:Name="KindleGrid"
+                    AutoGenerateColumns="False"
+                    IsReadOnly="True"
+                    CanUserAddRows="False"
+                    CanUserDeleteRows="False"
+                    SelectionMode="Single"
+                    MinRowHeight="140"
+                    HeadersVisibility="None"
+                    GridLinesVisibility="Horizontal"
+                    BorderThickness="0"
+                    AlternatingRowBackground="#FAFAFA">
+
+                    <DataGrid.Columns>
+
+                        <DataGridTemplateColumn Width="100">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+
+                                    <Image
+                                        Source="{Binding ImageURL}"
+                                        Width="80"
+                                        Height="115"
+                                        Stretch="Uniform"
+                                        Margin="8" />
+
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+
+
+                        <DataGridTemplateColumn Width="*">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+
+                                    <Grid Margin="10,8">
+
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                        </Grid.RowDefinitions>
+
+
+                                        <TextBlock
+                                            Grid.Row="0"
+                                            Text="{Binding Title}"
+                                            FontSize="17"
+                                            FontWeight="Bold"
+                                            Foreground="#222222"
+                                            TextWrapping="Wrap" />
+
+
+                                        <TextBlock
+                                            Grid.Row="1"
+                                            Text="{Binding Author}"
+                                            FontSize="14"
+                                            Foreground="#444444"
+                                            Margin="0,5,0,0" />
+
+
+                                        <TextBlock
+                                            Grid.Row="2"
+                                            Text="{Binding Publisher}"
+                                            FontSize="12"
+                                            Foreground="#777777"
+                                            Margin="0,4,0,0" />
+
+
+                                        <StackPanel
+                                            Grid.Row="3"
+                                            Orientation="Horizontal"
+                                            Margin="0,5,0,0">
+
+                                            <TextBlock
+                                                Text="{Binding ReleaseDate}"
+                                                FontSize="12"
+                                                Foreground="#777777" />
+
+                                            <TextBlock
+                                                Text="  ・  "
+                                                Foreground="#999999" />
+
+                                            <TextBlock
+                                                Text="{Binding Format}"
+                                                FontSize="12"
+                                                Foreground="#777777" />
+
+                                            <TextBlock
+                                                Text="  ・  ASIN: "
+                                                Foreground="#999999" />
+
+                                            <TextBlock
+                                                Text="{Binding ASIN}"
+                                                FontSize="12"
+                                                Foreground="#777777" />
+
+                                        </StackPanel>
+
+
+                                        <StackPanel
+                                            Grid.Row="4"
+                                            Orientation="Horizontal"
+                                            Margin="0,4,0,0">
+
+                                            <TextBlock
+                                                Text="{Binding PriceStatus}"
+                                                FontSize="13"
+                                                FontWeight="SemiBold"
+                                                Foreground="#333333" />
+
+                                            <TextBlock Text="  "/>
+
+                                            <TextBlock
+                                                Text="{Binding Price}"
+                                                FontSize="13"
+                                                Foreground="#666666" />
+
+                                        </StackPanel>
+
+                                    </Grid>
+
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+
+
+                        <DataGridTemplateColumn Width="150">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+
+                                    <Button
+                                        Content="Amazonで開く"
+                                        Tag="{Binding URL}"
+                                        Padding="12,8"
+                                        Margin="10"
+                                        Cursor="Hand"
+                                        VerticalAlignment="Center"
+                                        HorizontalAlignment="Center" />
+
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+
+                    </DataGrid.Columns>
+
+                </DataGrid>
+
+            </Border>
+
+
+            <!-- Movies legacy grid -->
             <Border
                 x:Name="ResultGridBorder"
                 Background="White"
@@ -419,25 +530,18 @@
 
                     <DataGrid.Columns>
 
-                        <DataGridTemplateColumn
-                            Header="Image"
-                            Width="100">
-
+                        <DataGridTemplateColumn Header="Image" Width="100">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
-
                                     <Image
                                         Source="{Binding ImageURL}"
                                         Width="75"
                                         Height="105"
                                         Stretch="Uniform"
                                         Margin="8" />
-
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellTemplate>
-
                         </DataGridTemplateColumn>
-
 
                         <DataGridTextColumn
                             Header="Title"
@@ -459,11 +563,7 @@
                             Binding="{Binding ASIN}"
                             Width="120" />
 
-
-                        <DataGridTemplateColumn
-                            Header="Amazon"
-                            Width="140">
-
+                        <DataGridTemplateColumn Header="Amazon" Width="140">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
 
@@ -477,7 +577,6 @@
 
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellTemplate>
-
                         </DataGridTemplateColumn>
 
                     </DataGrid.Columns>
@@ -511,7 +610,6 @@
                     <DataGrid.Columns>
 
                         <DataGridTemplateColumn Width="100">
-
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
 
@@ -524,12 +622,10 @@
 
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellTemplate>
-
                         </DataGridTemplateColumn>
 
 
                         <DataGridTemplateColumn Width="*">
-
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
 
@@ -567,15 +663,12 @@
                                             Margin="0,4,0,0">
 
                                             <StackPanel.Style>
-
                                                 <Style TargetType="StackPanel">
-
                                                     <Setter
                                                         Property="Visibility"
                                                         Value="Visible" />
 
                                                     <Style.Triggers>
-
                                                         <DataTrigger
                                                             Binding="{Binding Narrator}"
                                                             Value="">
@@ -583,15 +676,10 @@
                                                             <Setter
                                                                 Property="Visibility"
                                                                 Value="Collapsed" />
-
                                                         </DataTrigger>
-
                                                     </Style.Triggers>
-
                                                 </Style>
-
                                             </StackPanel.Style>
-
 
                                             <TextBlock
                                                 Text="ナレーション: "
@@ -618,8 +706,7 @@
                                             Grid.Row="4"
                                             Margin="0,5,0,0">
 
-                                            <StackPanel
-                                                Orientation="Horizontal">
+                                            <StackPanel Orientation="Horizontal">
 
                                                 <TextBlock
                                                     Text="{Binding ReleaseDate}"
@@ -628,7 +715,6 @@
 
                                                 <TextBlock
                                                     Text="  ・  "
-                                                    FontSize="12"
                                                     Foreground="#999999" />
 
                                                 <TextBlock
@@ -638,7 +724,6 @@
 
                                                 <TextBlock
                                                     Text="  ・  ASIN: "
-                                                    FontSize="12"
                                                     Foreground="#999999" />
 
                                                 <TextBlock
@@ -653,42 +738,13 @@
                                                 Orientation="Horizontal"
                                                 Margin="0,4,0,0">
 
-                                                <StackPanel.Style>
-
-                                                    <Style TargetType="StackPanel">
-
-                                                        <Setter
-                                                            Property="Visibility"
-                                                            Value="Visible" />
-
-                                                        <Style.Triggers>
-
-                                                            <DataTrigger
-                                                                Binding="{Binding PriceStatus}"
-                                                                Value="">
-
-                                                                <Setter
-                                                                    Property="Visibility"
-                                                                    Value="Collapsed" />
-
-                                                            </DataTrigger>
-
-                                                        </Style.Triggers>
-
-                                                    </Style>
-
-                                                </StackPanel.Style>
-
-
                                                 <TextBlock
                                                     Text="{Binding PriceStatus}"
                                                     FontSize="13"
                                                     FontWeight="SemiBold"
                                                     Foreground="#333333" />
 
-                                                <TextBlock
-                                                    Text="  "
-                                                    FontSize="13" />
+                                                <TextBlock Text="  "/>
 
                                                 <TextBlock
                                                     Text="{Binding Price}"
@@ -703,12 +759,10 @@
 
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellTemplate>
-
                         </DataGridTemplateColumn>
 
 
                         <DataGridTemplateColumn Width="150">
-
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
 
@@ -723,7 +777,6 @@
 
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellTemplate>
-
                         </DataGridTemplateColumn>
 
                     </DataGrid.Columns>
