@@ -17,6 +17,9 @@ Add-Type -AssemblyName PresentationFramework
 # Runtime data
 # ==========================================
 
+$script:booksAllResults = @()
+$script:booksTotalResultCount = 0
+
 $script:audibleAllResults = @()
 
 
@@ -100,11 +103,17 @@ $searchBox =
 $searchButton =
     $window.FindName("SearchButton")
 
+$booksGrid =
+    $window.FindName("BooksGrid")
+
 $resultGrid =
     $window.FindName("ResultGrid")
 
 $audibleGrid =
     $window.FindName("AudibleGrid")
+
+$booksGridBorder =
+    $window.FindName("BooksGridBorder")
 
 $resultGridBorder =
     $window.FindName("ResultGridBorder")
@@ -124,71 +133,56 @@ $sortBox =
 $filterBox =
     $window.FindName("FilterBox")
 
+$includedFilterItem =
+    $window.FindName("IncludedFilterItem")
+
 
 # ==========================================
 # Open Amazon product page
 # ==========================================
 
-$resultGrid.AddHandler(
-    [System.Windows.Controls.Button]::ClickEvent,
-    [System.Windows.RoutedEventHandler]{
+function Add-AmazonButtonHandler {
 
-        param($sender, $e)
+    param(
+        [Parameter(Mandatory)]
+        $Grid
+    )
 
-        $button =
-            $e.OriginalSource
+    $Grid.AddHandler(
+        [System.Windows.Controls.Button]::ClickEvent,
+        [System.Windows.RoutedEventHandler]{
 
-        while (
-            $button -and
-            -not ($button -is [System.Windows.Controls.Button])
-        ) {
-
-            $button =
-                [System.Windows.Media.VisualTreeHelper]::GetParent(
-                    $button
-                )
-        }
-
-        if ($button -and $button.Tag) {
-
-            Start-Process $button.Tag.ToString()
-
-            $e.Handled =
-                $true
-        }
-    }
-)
-
-
-$audibleGrid.AddHandler(
-    [System.Windows.Controls.Button]::ClickEvent,
-    [System.Windows.RoutedEventHandler]{
-
-        param($sender, $e)
-
-        $button =
-            $e.OriginalSource
-
-        while (
-            $button -and
-            -not ($button -is [System.Windows.Controls.Button])
-        ) {
+            param($sender, $e)
 
             $button =
-                [System.Windows.Media.VisualTreeHelper]::GetParent(
-                    $button
-                )
+                $e.OriginalSource
+
+            while (
+                $button -and
+                -not ($button -is [System.Windows.Controls.Button])
+            ) {
+
+                $button =
+                    [System.Windows.Media.VisualTreeHelper]::GetParent(
+                        $button
+                    )
+            }
+
+            if ($button -and $button.Tag) {
+
+                Start-Process $button.Tag.ToString()
+
+                $e.Handled =
+                    $true
+            }
         }
+    )
+}
 
-        if ($button -and $button.Tag) {
 
-            Start-Process $button.Tag.ToString()
-
-            $e.Handled =
-                $true
-        }
-    }
-)
+Add-AmazonButtonHandler -Grid $booksGrid
+Add-AmazonButtonHandler -Grid $resultGrid
+Add-AmazonButtonHandler -Grid $audibleGrid
 
 
 # ==========================================
@@ -202,33 +196,172 @@ function Set-CategoryUI {
         [string]$Category
     )
 
-    if ($Category -eq "Audible") {
 
-        $resultGridBorder.Visibility =
-            [System.Windows.Visibility]::Collapsed
+    $booksGridBorder.Visibility =
+        [System.Windows.Visibility]::Collapsed
 
-        $audibleGridBorder.Visibility =
-            [System.Windows.Visibility]::Visible
+    $resultGridBorder.Visibility =
+        [System.Windows.Visibility]::Collapsed
 
-        $sortBox.Visibility =
-            [System.Windows.Visibility]::Visible
+    $audibleGridBorder.Visibility =
+        [System.Windows.Visibility]::Collapsed
 
-        $filterBox.Visibility =
-            [System.Windows.Visibility]::Visible
+    $sortBox.Visibility =
+        [System.Windows.Visibility]::Collapsed
+
+    $filterBox.Visibility =
+        [System.Windows.Visibility]::Collapsed
+
+    $includedFilterItem.Visibility =
+        [System.Windows.Visibility]::Collapsed
+
+
+    switch ($Category) {
+
+        "Books" {
+
+            $booksGridBorder.Visibility =
+                [System.Windows.Visibility]::Visible
+
+            $sortBox.Visibility =
+                [System.Windows.Visibility]::Visible
+
+            $filterBox.Visibility =
+                [System.Windows.Visibility]::Visible
+        }
+
+
+        "Kindle" {
+
+            $resultGridBorder.Visibility =
+                [System.Windows.Visibility]::Visible
+        }
+
+
+        "Movies" {
+
+            $resultGridBorder.Visibility =
+                [System.Windows.Visibility]::Visible
+        }
+
+
+        "Audible" {
+
+            $audibleGridBorder.Visibility =
+                [System.Windows.Visibility]::Visible
+
+            $sortBox.Visibility =
+                [System.Windows.Visibility]::Visible
+
+            $filterBox.Visibility =
+                [System.Windows.Visibility]::Visible
+
+            $includedFilterItem.Visibility =
+                [System.Windows.Visibility]::Visible
+        }
+    }
+}
+
+
+# ==========================================
+# Books filter
+# ==========================================
+
+function Apply-BooksFilter {
+
+    $allResults =
+        @($script:booksAllResults)
+
+    $totalResultCount =
+        $script:booksTotalResultCount
+
+
+    if (-not $filterBox.SelectedItem) {
+
+        $booksGrid.ItemsSource =
+            $allResults
+
+        return
+    }
+
+
+    $filter =
+        $filterBox.SelectedItem.Tag.ToString()
+
+
+    switch ($filter) {
+
+        "Released" {
+
+            $filteredResults =
+                @(
+                    $allResults |
+                    Where-Object {
+                        $_.AvailabilityType -eq "IN_STOCK"
+                    }
+                )
+        }
+
+
+        "Preorder" {
+
+            $filteredResults =
+                @(
+                    $allResults |
+                    Where-Object {
+                        $_.AvailabilityType -eq "PREORDER"
+                    }
+                )
+        }
+
+
+        default {
+
+            $filteredResults =
+                $allResults
+        }
+    }
+
+
+    $booksGrid.ItemsSource =
+        $filteredResults
+
+
+    # ======================================
+    # Status
+    # ======================================
+
+    if ($filter -eq "All") {
+
+        if (
+            $totalResultCount -gt
+            $allResults.Count
+        ) {
+
+            $statusText.Text =
+                "Books / $($allResults.Count) of $totalResultCount results"
+        }
+        else {
+
+            $statusText.Text =
+                "Books / $($allResults.Count) results"
+        }
     }
     else {
 
-        $resultGridBorder.Visibility =
-            [System.Windows.Visibility]::Visible
+        if (
+            $totalResultCount -gt
+            $allResults.Count
+        ) {
 
-        $audibleGridBorder.Visibility =
-            [System.Windows.Visibility]::Collapsed
+            $statusText.Text =
+                "Books / $($filteredResults.Count) filtered / $($allResults.Count) of $totalResultCount retrieved"
+        }
+        else {
 
-        $sortBox.Visibility =
-            [System.Windows.Visibility]::Collapsed
-
-        $filterBox.Visibility =
-            [System.Windows.Visibility]::Collapsed
+            $statusText.Text =
+                "Books / $($filteredResults.Count) of $($allResults.Count) results"
+        }
     }
 }
 
@@ -249,6 +382,7 @@ function Apply-AudibleFilter {
 
         return
     }
+
 
     $filter =
         $filterBox.SelectedItem.Tag.ToString()
@@ -353,31 +487,48 @@ function Start-AmazonSearch {
 
         switch ($selectedCategory) {
 
+
+            # ==================================
+            # Books
+            # ==================================
             "Books" {
+
+                $sortBy =
+                    $sortBox.SelectedItem.Tag.ToString()
 
                 $searchParams = @{
                     Keyword     = $keyword
                     Config      = $config
                     AccessToken = $accessToken
+                    SortBy      = $sortBy
                 }
 
-                $results =
+
+                $bookSearchResult =
                     Search-Books @searchParams
 
+
+                $script:booksAllResults =
+                    @($bookSearchResult.Items)
+
+                $script:booksTotalResultCount =
+                    [int]$bookSearchResult.TotalResultCount
+
+
                 $resultGrid.ItemsSource =
-                    $results
+                    $null
 
                 $audibleGrid.ItemsSource =
                     $null
 
-                $script:audibleAllResults =
-                    @()
 
-                $statusText.Text =
-                    "Books / $($results.Count) results"
+                Apply-BooksFilter
             }
 
 
+            # ==================================
+            # Kindle
+            # ==================================
             "Kindle" {
 
                 $searchParams = @{
@@ -392,17 +543,20 @@ function Start-AmazonSearch {
                 $resultGrid.ItemsSource =
                     $results
 
-                $audibleGrid.ItemsSource =
+                $booksGrid.ItemsSource =
                     $null
 
-                $script:audibleAllResults =
-                    @()
+                $audibleGrid.ItemsSource =
+                    $null
 
                 $statusText.Text =
                     "Kindle / $($results.Count) results"
             }
 
 
+            # ==================================
+            # Movies
+            # ==================================
             "Movies" {
 
                 $searchParams = @{
@@ -417,17 +571,20 @@ function Start-AmazonSearch {
                 $resultGrid.ItemsSource =
                     $results
 
-                $audibleGrid.ItemsSource =
+                $booksGrid.ItemsSource =
                     $null
 
-                $script:audibleAllResults =
-                    @()
+                $audibleGrid.ItemsSource =
+                    $null
 
                 $statusText.Text =
                     "Movies / $($results.Count) results"
             }
 
 
+            # ==================================
+            # Audible
+            # ==================================
             "Audible" {
 
                 $sortBy =
@@ -445,6 +602,9 @@ function Start-AmazonSearch {
 
                 $script:audibleAllResults =
                     @($results)
+
+                $booksGrid.ItemsSource =
+                    $null
 
                 $resultGrid.ItemsSource =
                     $null
@@ -487,6 +647,11 @@ $categoryBox.Add_SelectionChanged({
         $selectedCategory =
             $categoryBox.SelectedItem.Content.ToString()
 
+
+        $filterBox.SelectedIndex =
+            0
+
+
         Set-CategoryUI `
             -Category $selectedCategory
     }
@@ -499,12 +664,26 @@ $categoryBox.Add_SelectionChanged({
 
 $filterBox.Add_SelectionChanged({
 
-    if (
-        $categoryBox.SelectedItem -and
-        $categoryBox.SelectedItem.Content.ToString() -eq "Audible"
-    ) {
+    if (-not $categoryBox.SelectedItem) {
+        return
+    }
 
-        Apply-AudibleFilter
+    $selectedCategory =
+        $categoryBox.SelectedItem.Content.ToString()
+
+
+    switch ($selectedCategory) {
+
+        "Books" {
+
+            Apply-BooksFilter
+        }
+
+
+        "Audible" {
+
+            Apply-AudibleFilter
+        }
     }
 })
 
