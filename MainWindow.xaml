@@ -51,6 +51,7 @@
 
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="150"/>
+                    <ColumnDefinition Width="130"/>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="Auto"/>
@@ -75,9 +76,29 @@
                 </ComboBox>
 
 
+                <ComboBox
+                    x:Name="SearchModeBox"
+                    Grid.Column="1"
+                    Height="38"
+                    Margin="0,0,10,0"
+                    FontSize="13"
+                    SelectedIndex="0"
+                    VerticalContentAlignment="Center">
+
+                    <ComboBoxItem
+                        Content="キーワード"
+                        Tag="Keyword" />
+
+                    <ComboBoxItem
+                        Content="著者名"
+                        Tag="Author" />
+
+                </ComboBox>
+
+
                 <TextBox
                     x:Name="SearchBox"
-                    Grid.Column="1"
+                    Grid.Column="2"
                     Height="38"
                     FontSize="16"
                     Padding="10,5"
@@ -87,7 +108,7 @@
 
                 <ComboBox
                     x:Name="SortBox"
-                    Grid.Column="2"
+                    Grid.Column="3"
                     Width="160"
                     Height="38"
                     Margin="0,0,10,0"
@@ -116,7 +137,7 @@
 
                 <ComboBox
                     x:Name="FilterBox"
-                    Grid.Column="3"
+                    Grid.Column="4"
                     Width="150"
                     Height="38"
                     Margin="0,0,10,0"
@@ -142,12 +163,24 @@
                         Tag="Included"
                         Visibility="Collapsed" />
 
+                    <ComboBoxItem
+                        x:Name="KUFilterItem"
+                        Content="KU対象のみ"
+                        Tag="KindleUnlimited"
+                        Visibility="Collapsed" />
+
+                    <ComboBoxItem
+                        x:Name="LimitedFreeFilterItem"
+                        Content="期間限定無料のみ"
+                        Tag="LimitedFree"
+                        Visibility="Collapsed" />
+
                 </ComboBox>
 
 
                 <Button
                     x:Name="SearchButton"
-                    Grid.Column="4"
+                    Grid.Column="5"
                     Height="38"
                     Content="Search"
                     FontSize="14"
@@ -362,6 +395,7 @@
                                             <RowDefinition Height="Auto"/>
                                             <RowDefinition Height="Auto"/>
                                             <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
                                         </Grid.RowDefinitions>
 
                                         <TextBlock
@@ -399,6 +433,38 @@
 
                                         <StackPanel
                                             Grid.Row="4"
+                                            Orientation="Horizontal"
+                                            Margin="0,5,0,0">
+
+                                            <Border
+                                                Padding="7,2"
+                                                Margin="0,0,8,0"
+                                                CornerRadius="4"
+                                                Background="#EEEEEE">
+
+                                                <TextBlock
+                                                    Text="{Binding KindleUnlimitedDisplay}"
+                                                    FontSize="12"
+                                                    FontWeight="SemiBold" />
+
+                                            </Border>
+
+                                            <Border
+                                                Padding="7,2"
+                                                CornerRadius="4"
+                                                Background="#EEEEEE">
+
+                                                <TextBlock
+                                                    Text="{Binding LimitedFreeDisplay}"
+                                                    FontSize="12"
+                                                    FontWeight="SemiBold" />
+
+                                            </Border>
+
+                                        </StackPanel>
+
+                                        <StackPanel
+                                            Grid.Row="5"
                                             Orientation="Horizontal"
                                             Margin="0,4,0,0">
 

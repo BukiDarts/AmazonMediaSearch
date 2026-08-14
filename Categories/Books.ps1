@@ -10,7 +10,10 @@
         [Parameter(Mandatory)]
         [string]$AccessToken,
 
-        [string]$SortBy = "Relevance"
+        [string]$SortBy = "Relevance",
+
+        [ValidateSet("Keyword", "Author")]
+        [string]$SearchMode = "Keyword"
     )
 
     $resources = @(
@@ -113,6 +116,20 @@
 
             $publisherText =
                 $publishers -join ", "
+
+
+            # Author search filter
+            if (
+                $SearchMode -eq "Author" -and
+                -not (
+                    Test-AmazonAuthorMatch `
+                        -Contributors @($item.itemInfo.byLineInfo.contributors) `
+                        -AuthorKeyword $Keyword
+                )
+            ) {
+
+                continue
+            }
 
 
             # Book format / binding

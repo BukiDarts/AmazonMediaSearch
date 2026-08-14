@@ -10,7 +10,10 @@
         [Parameter(Mandatory)]
         [string]$AccessToken,
 
-        [string]$SortBy = "Relevance"
+        [string]$SortBy = "Relevance",
+
+        [ValidateSet("Keyword", "Author")]
+        [string]$SearchMode = "Keyword"
     )
 
     $resources = @(
@@ -18,6 +21,7 @@
         "itemInfo.byLineInfo",
         "itemInfo.classifications",
         "itemInfo.contentInfo",
+        "browseNodeInfo.browseNodes",
         "images.primary.medium",
         "offersV2.listings.price",
         "offersV2.listings.availability",
@@ -114,6 +118,20 @@
 
             $publisherText =
                 $publishers -join ", "
+
+
+            # Author search filter
+            if (
+                $SearchMode -eq "Author" -and
+                -not (
+                    Test-AmazonAuthorMatch `
+                        -Contributors @($item.itemInfo.byLineInfo.contributors) `
+                        -AuthorKeyword $Keyword
+                )
+            ) {
+
+                continue
+            }
 
 
             # Format / binding
@@ -224,6 +242,97 @@
             }
 
 
+
+
+            # Kindle Unlimited / limited-free status
+            $kindleUnlimited =
+                $null
+
+            $limitedFree =
+                $null
+
+
+            if (
+                $item.browseNodeInfo -and
+                $item.browseNodeInfo.browseNodes
+            ) {
+
+                $kindleUnlimited =
+                    $false
+
+                $limitedFree =
+                    $false
+
+
+                foreach (
+                    $browseNode in
+                    @($item.browseNodeInfo.browseNodes)
+                ) {
+
+                    $browseNodeName =
+                        [string]$browseNode.displayName
+
+
+                    if (
+                        $browseNodeName -match
+                        'Kindle\s*Unlimited'
+                    ) {
+
+                        $kindleUnlimited =
+                            $true
+                    }
+
+
+                    if (
+                        $browseNodeName -match
+                        '期間限定無料'
+                    ) {
+
+                        $limitedFree =
+                            $true
+                    }
+                }
+            }
+
+
+            $kindleUnlimitedDisplay =
+                "不明"
+
+            if (
+                $kindleUnlimited -eq $true
+            ) {
+
+                $kindleUnlimitedDisplay =
+                    "KU対象"
+            }
+            elseif (
+                $kindleUnlimited -eq $false
+            ) {
+
+                $kindleUnlimitedDisplay =
+                    "KU対象外"
+            }
+
+
+            $limitedFreeDisplay =
+                "不明"
+
+            if (
+                $limitedFree -eq $true
+            ) {
+
+                $limitedFreeDisplay =
+                    "期間無料"
+            }
+            elseif (
+                $limitedFree -eq $false
+            ) {
+
+                $limitedFreeDisplay =
+                    "期間無料なし"
+            }
+
+
             # Result
             $result = [PSCustomObject]@{
 
@@ -250,6 +359,18 @@
 
                 AvailabilityType =
                     $availabilityType
+
+                KindleUnlimited =
+                    $kindleUnlimited
+
+                KindleUnlimitedDisplay =
+                    $kindleUnlimitedDisplay
+
+                LimitedFree =
+                    $limitedFree
+
+                LimitedFreeDisplay =
+                    $limitedFreeDisplay
 
                 ASIN =
                     $item.asin

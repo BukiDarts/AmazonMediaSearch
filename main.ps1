@@ -6,6 +6,7 @@
 
 . "$PSScriptRoot\Core\Get-AmazonAccessToken.ps1"
 . "$PSScriptRoot\Core\Invoke-AmazonSearch.ps1"
+. "$PSScriptRoot\Core\Test-AmazonAuthorMatch.ps1"
 
 . "$PSScriptRoot\Categories\Books.ps1"
 . "$PSScriptRoot\Categories\Kindle.ps1"
@@ -130,6 +131,9 @@ $statusText =
 $categoryBox =
     $window.FindName("CategoryBox")
 
+$searchModeBox =
+    $window.FindName("SearchModeBox")
+
 $sortBox =
     $window.FindName("SortBox")
 
@@ -138,6 +142,12 @@ $filterBox =
 
 $includedFilterItem =
     $window.FindName("IncludedFilterItem")
+
+$kuFilterItem =
+    $window.FindName("KUFilterItem")
+
+$limitedFreeFilterItem =
+    $window.FindName("LimitedFreeFilterItem")
 
 
 # ==========================================
@@ -223,6 +233,16 @@ function Set-CategoryUI {
     $includedFilterItem.Visibility =
         [System.Windows.Visibility]::Collapsed
 
+    $kuFilterItem.Visibility =
+        [System.Windows.Visibility]::Collapsed
+
+    $limitedFreeFilterItem.Visibility =
+        [System.Windows.Visibility]::Collapsed
+
+
+    $searchModeBox.IsEnabled =
+        $true
+
 
     switch ($Category) {
 
@@ -237,6 +257,12 @@ function Set-CategoryUI {
 
             $kindleGridBorder.Visibility =
                 [System.Windows.Visibility]::Visible
+
+            $kuFilterItem.Visibility =
+                [System.Windows.Visibility]::Visible
+
+            $limitedFreeFilterItem.Visibility =
+                [System.Windows.Visibility]::Visible
         }
 
 
@@ -244,6 +270,14 @@ function Set-CategoryUI {
 
             $moviesGridBorder.Visibility =
                 [System.Windows.Visibility]::Visible
+
+
+            $searchModeBox.SelectedIndex =
+                0
+
+
+            $searchModeBox.IsEnabled =
+                $false
         }
 
 
@@ -336,6 +370,28 @@ function Apply-BooksFilter {
                     $allResults |
                     Where-Object {
                         $_.AvailabilityType -eq "PREORDER"
+                    }
+                )
+        }
+
+        "KindleUnlimited" {
+
+            $filteredResults =
+                @(
+                    $allResults |
+                    Where-Object {
+                        $_.KindleUnlimited -eq $true
+                    }
+                )
+        }
+
+        "LimitedFree" {
+
+            $filteredResults =
+                @(
+                    $allResults |
+                    Where-Object {
+                        $_.LimitedFree -eq $true
                     }
                 )
         }
@@ -578,6 +634,10 @@ function Start-AmazonSearch {
         $sortBox.SelectedItem.Tag.ToString()
 
 
+    $searchMode =
+        $searchModeBox.SelectedItem.Tag.ToString()
+
+
     Set-CategoryUI -Category $category
 
     $statusText.Text =
@@ -596,7 +656,8 @@ function Start-AmazonSearch {
                         -Keyword $keyword `
                         -Config $config `
                         -AccessToken $accessToken `
-                        -SortBy $sortBy
+                        -SortBy $sortBy `
+                        -SearchMode $searchMode
 
                 $script:booksAllResults =
                     @($result.Items)
@@ -615,7 +676,8 @@ function Start-AmazonSearch {
                         -Keyword $keyword `
                         -Config $config `
                         -AccessToken $accessToken `
-                        -SortBy $sortBy
+                        -SortBy $sortBy `
+                        -SearchMode $searchMode
 
                 $script:kindleAllResults =
                     @($result.Items)
@@ -653,7 +715,8 @@ function Start-AmazonSearch {
                         -Keyword $keyword `
                         -Config $config `
                         -AccessToken $accessToken `
-                        -SortBy $sortBy
+                        -SortBy $sortBy `
+                        -SearchMode $searchMode
 
                 $script:audibleAllResults =
                     @($results)
